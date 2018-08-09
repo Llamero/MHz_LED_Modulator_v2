@@ -89,8 +89,8 @@ public class RotatePanel extends JPanel {
         newXform.rotate(Math.toRadians(currentAngle), xRot, yRot);
         g2d.setTransform(newXform);
         //draw image centered in panel
-        int x = (getWidth() - image.getWidth(this))/2+3; //Add 3 offset to keep knob centered in scale
-        int y = (getHeight() - image.getHeight(this))/2;
+        int x = (int) ((getWidth() - image.getWidth(this))/2+3); //Add 3 offset to keep knob centered in scale
+        int y = (int) ((getHeight() - image.getHeight(this))/2-1);
         g2d.drawImage(image, x, y, this);
         g2d.setTransform(origXform);
     }

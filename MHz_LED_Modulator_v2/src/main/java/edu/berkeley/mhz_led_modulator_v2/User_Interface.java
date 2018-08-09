@@ -245,6 +245,7 @@ public class User_Interface extends javax.swing.JFrame {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
 
         rotatePanel1.rotateWithParam(a+=10);
+        if(a==360) a=0;
     }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
