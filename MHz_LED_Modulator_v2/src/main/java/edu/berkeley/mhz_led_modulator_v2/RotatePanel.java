@@ -12,6 +12,7 @@ package edu.berkeley.mhz_led_modulator_v2;
 import java.awt.*;
 import java.awt.geom.*;
 import java.awt.image.BufferedImage;
+import java.net.URL;
 import javax.swing.*;
  
 public class RotatePanel extends JPanel {
@@ -23,7 +24,10 @@ public class RotatePanel extends JPanel {
  
     public RotatePanel(Image image) {
         this.image = image;
-        if (image == null) image = new BufferedImage(300, 300, BufferedImage.TYPE_INT_RGB); //Needed to keep Design mode from crashing if image is null: https://stackoverflow.com/questions/28805846/netbeans-showing-error-in-design-view-even-though-the-code-is-working-properly
+        if (image == null){ //Needed to keep Design mode from crashing if image is null: https://stackoverflow.com/questions/28805846/netbeans-showing-error-in-design-view-even-though-the-code-is-working-properly
+            URL url = getClass().getResource("/Images/knob2-resized.png");   
+            image = new ImageIcon(url).getImage();
+        } 
         MediaTracker mt = new MediaTracker(this);
         mt.addImage(image, 0);
         try {
@@ -37,7 +41,10 @@ public class RotatePanel extends JPanel {
     public void setImage(Image image)
     {
        this.image = image;
-       if (image == null) image = new BufferedImage(300, 300, BufferedImage.TYPE_INT_RGB); //Needed to keep Design mode from crashing if image is null: https://stackoverflow.com/questions/28805846/netbeans-showing-error-in-design-view-even-though-the-code-is-working-properly
+       if (image == null){ //Needed to keep Design mode from crashing if image is null: https://stackoverflow.com/questions/28805846/netbeans-showing-error-in-design-view-even-though-the-code-is-working-properly
+            URL url = getClass().getResource("/Images/knob2-resized.png");   
+            image = new ImageIcon(url).getImage();
+       }        
        MediaTracker mt = new MediaTracker(this);
        mt.addImage(image, 0);
        try {
@@ -69,7 +76,10 @@ public class RotatePanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        if (image == null) image = new BufferedImage(300, 300, BufferedImage.TYPE_INT_RGB); //Needed to keep Design mode from crashing if image is null: https://stackoverflow.com/questions/28805846/netbeans-showing-error-in-design-view-even-though-the-code-is-working-properly
+        if (image == null){ //Needed to keep Design mode from crashing if image is null: https://stackoverflow.com/questions/28805846/netbeans-showing-error-in-design-view-even-though-the-code-is-working-properly
+            URL url = getClass().getResource("/Images/knob2-resized.png");   
+            image = new ImageIcon(url).getImage();
+        } 
         Graphics2D g2d = (Graphics2D)g;
         AffineTransform origXform = g2d.getTransform();
         AffineTransform newXform = (AffineTransform)(origXform.clone());
@@ -79,7 +89,7 @@ public class RotatePanel extends JPanel {
         newXform.rotate(Math.toRadians(currentAngle), xRot, yRot);
         g2d.setTransform(newXform);
         //draw image centered in panel
-        int x = (getWidth() - image.getWidth(this))/2;
+        int x = (getWidth() - image.getWidth(this))/2+3; //Add 3 offset to keep knob centered in scale
         int y = (getHeight() - image.getHeight(this))/2;
         g2d.drawImage(image, x, y, this);
         g2d.setTransform(origXform);
