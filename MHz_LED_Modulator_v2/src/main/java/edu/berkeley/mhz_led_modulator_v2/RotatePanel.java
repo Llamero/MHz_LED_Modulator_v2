@@ -81,6 +81,7 @@ public class RotatePanel extends JPanel {
             image = new ImageIcon(url).getImage();
         } 
         Graphics2D g2d = (Graphics2D)g;
+        g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR); //Antialis edges during rotation transform
         AffineTransform origXform = g2d.getTransform();
         AffineTransform newXform = (AffineTransform)(origXform.clone());
         //center of rotation is center of the panel
