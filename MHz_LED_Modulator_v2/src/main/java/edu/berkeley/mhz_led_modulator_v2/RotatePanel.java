@@ -7,7 +7,7 @@ package edu.berkeley.mhz_led_modulator_v2;
 
 /**
 *https://mdsaputra.wordpress.com/2011/06/24/java-rotate-image/
-* @author EtaYuy88 aka Meihta Dwiguna Saputra
+* @ original author EtaYuy88 aka Meihta Dwiguna Saputra
 */
 import java.awt.*;
 import java.awt.geom.*;

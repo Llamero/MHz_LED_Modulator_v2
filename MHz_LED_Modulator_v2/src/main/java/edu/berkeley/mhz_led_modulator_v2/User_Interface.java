@@ -19,11 +19,16 @@ import javax.swing.ImageIcon;
  */
 public class User_Interface extends javax.swing.JFrame {
     public int a = 0;
+    SerialToArduino serial;
     /**
      * Creates new form User_Interface
+     * @throws java.lang.InterruptedException
      */
-    public User_Interface() {
+    public User_Interface() throws InterruptedException {
+        serial = new SerialToArduino();
+        serial.initialize();
         initComponents();
+        
     }
 
     /**
@@ -312,7 +317,11 @@ public class User_Interface extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new User_Interface().setVisible(true);
+                try {
+                    new User_Interface().setVisible(true);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(User_Interface.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         });
     }
