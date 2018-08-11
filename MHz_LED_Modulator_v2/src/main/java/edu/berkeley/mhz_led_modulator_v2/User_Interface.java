@@ -25,8 +25,8 @@ public class User_Interface extends javax.swing.JFrame {
      * @throws java.lang.InterruptedException
      */
     public User_Interface() throws InterruptedException {
-        serial = new SerialToArduino();
-        serial.initialize();
+        //serial = new SerialToArduino();
+        //serial.initialize();
         initComponents();
         
     }
