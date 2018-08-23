@@ -5,12 +5,18 @@
  */
 package edu.berkeley.mhz_led_modulator_v2;
 
+import com.fazecast.jSerialComm.SerialPort;
+import static com.fazecast.jSerialComm.SerialPort.TIMEOUT_READ_BLOCKING;
 import java.awt.Image;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.net.URL;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.ImageIcon;
+import javax.swing.SwingWorker;
 
 
 /**
@@ -18,17 +24,15 @@ import javax.swing.ImageIcon;
  * @author Ben
  */
 public class User_Interface extends javax.swing.JFrame {
-    public int a = 0;
-    SerialToArduino serial;
+    private SerialPort arduinoPort; //Initialize port object for communication to the Arduino via JSerialComm
+    private static final byte[] HANDSHAKE = {38, 77, 46, 64}; //Four digit ID code for identifying driver Arduinos
     /**
      * Creates new form User_Interface
      * @throws java.lang.InterruptedException
      */
-    public User_Interface() throws InterruptedException {
-        //serial = new SerialToArduino();
-        //serial.initialize();
-        initComponents();
-        
+    private User_Interface() throws InterruptedException {
+        initComponents(); //Initialize interface components
+        initSelfListeners(); //Setup listeners for initialization events to happen when GUI appears
     }
 
     /**
@@ -220,7 +224,8 @@ public class User_Interface extends javax.swing.JFrame {
                 .addComponent(rotatePanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jButton1.setText("OK");
+        jButton1.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        jButton1.setText("CONNECT");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton1ActionPerformed(evt);
@@ -253,7 +258,7 @@ public class User_Interface extends javax.swing.JFrame {
                         .addGap(126, 126, 126)
                         .addComponent(tempPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(54, 54, 54)
+                        .addGap(35, 35, 35)
                         .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, 319, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -264,7 +269,7 @@ public class User_Interface extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(tempPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLayeredPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 12, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jButton1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -276,8 +281,6 @@ public class User_Interface extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
 
-            rotatePanel1.rotateWithParam(a);
-            repaint();
 
     }//GEN-LAST:event_jButton1ActionPerformed
 
@@ -318,7 +321,8 @@ public class User_Interface extends javax.swing.JFrame {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
-                    new User_Interface().setVisible(true);
+                    User_Interface GUI = new User_Interface();
+                    GUI.setVisible(true);
                 } catch (InterruptedException ex) {
                     Logger.getLogger(User_Interface.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -345,4 +349,93 @@ public class User_Interface extends javax.swing.JFrame {
     private edu.berkeley.mhz_led_modulator_v2.RotatePanel rotatePanel1;
     private javax.swing.JPanel tempPanel;
     // End of variables declaration//GEN-END:variables
+    
+    //This is a mockup worker to simulate some time-consiming loading task that would be performed at startup, with the GUI providing a loading screen...
+    //Code is from: https://stackoverflow.com/questions/39565472/how-to-automatically-execute-a-task-after-jframe-is-displayed-from-within-it
+    SwingWorker<Integer, Integer> StartupLoader = new SwingWorker<Integer, Integer>() {
+        @Override
+        protected Integer doInBackground() throws Exception {
+            initializeSerial(HANDSHAKE);
+            return 100;
+        }
+    };
+
+    //This method is used to avoid calling an overridable method ('addWindowListener()') from within the constructor.
+    //Code is from: https://stackoverflow.com/questions/39565472/how-to-automatically-execute-a-task-after-jframe-is-displayed-from-within-it
+    private void initSelfListeners() {
+        WindowListener taskStarterWindowListener = new WindowListener() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+                System.out.println("Performing task..."); //Perform task here. In this case, we are simulating a startup (only once) time-consuming task that would use a worker.
+                StartupLoader.execute();
+            }
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+                //Do nothing...Or something...You decide!
+            }
+
+            @Override
+            public void windowClosed(WindowEvent e) {
+                //Do nothing...Or drink coffee...NVM; always drink coffee!
+            }
+
+            @Override
+            public void windowIconified(WindowEvent e) {
+                //Do nothing...Or do EVERYTHING!
+            }
+
+            @Override
+            public void windowDeiconified(WindowEvent e) {
+                //Do nothing...Or break the law...
+            }
+
+            @Override
+            public void windowActivated(WindowEvent e) {
+                //Do nothing...Procrastinate like me!
+            }
+
+            @Override
+            public void windowDeactivated(WindowEvent e) {
+                //Do nothing...And please don't notice I have way too much free time today...
+            }
+        };
+
+        //Here is where the magic happens! We make (a listener within) the frame start listening to the frame's own events!
+        this.addWindowListener(taskStarterWindowListener);
+    }
+    private void initializeSerial(byte[] HANDSHAKE) throws InterruptedException{
+        //Generate an array of available ports on system
+        int nPorts = SerialPort.getCommPorts().length;
+        SerialPort[] serialPorts = SerialPort.getCommPorts();
+        int a;
+        byte[] readBuffer = new byte[5]; //Temporary buffer array to store initial reveiced stream
+        byte recShake[] = new byte[4]; //Array to store recieved handshake ID
+        byte id[] = new byte[1]; //Array to store Arduino ID number
+        boolean arduinoFound = false; //Variable to ID whether an Arduino is found on available COM ports
+            
+        //Toggle each port, until one sends correct sequence of bytes
+        
+        for(a = 0; a < nPorts; a++){
+            arduinoPort = serialPorts[a];
+            arduinoPort.setBaudRate(250000);
+            arduinoPort.setComPortTimeouts(TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
+            System.out.println("Testing " + arduinoPort.getDescriptivePortName());
+            arduinoPort.openPort();
+            arduinoPort.readBytes(readBuffer, readBuffer.length);
+            recShake = Arrays.copyOfRange(readBuffer, 0, 4);
+            id = Arrays.copyOfRange(readBuffer, 4, 5);
+            if(Arrays.equals(HANDSHAKE, recShake)){
+                System.out.println("Arduino #" + id[0] + " is on " + arduinoPort.getDescriptivePortName());
+                arduinoFound = true;
+            }
+            arduinoPort.closePort();
+        }
+        if(nPorts == 0) System.out.println("No available COM ports found on this computer.");
+        else if(!arduinoFound){
+            System.out.println("" + recShake[0] + " " + recShake[1] + " " + recShake[2] + " " + recShake[3] + " ");
+            System.out.println("Arduino not found.");
+        }
+    } 
 }
+
