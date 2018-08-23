@@ -26,6 +26,7 @@ import javax.swing.SwingWorker;
 public class User_Interface extends javax.swing.JFrame {
     private SerialPort arduinoPort; //Initialize port object for communication to the Arduino via JSerialComm
     private static final byte[] HANDSHAKE = {38, 77, 46, 64}; //Four digit ID code for identifying driver Arduinos
+    private static User_Interface GUI; //User interface frame
     /**
      * Creates new form User_Interface
      * @throws java.lang.InterruptedException
@@ -61,6 +62,7 @@ public class User_Interface extends javax.swing.JFrame {
         rotatePanel1 = new edu.berkeley.mhz_led_modulator_v2.RotatePanel();
         jButton1 = new javax.swing.JButton();
         jSlider1 = new javax.swing.JSlider();
+        statusLabel = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -242,12 +244,16 @@ public class User_Interface extends javax.swing.JFrame {
             }
         });
 
+        statusLabel.setText("jLabel3");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(statusLabel)
+                .addGap(218, 218, 218)
                 .addComponent(jButton1)
                 .addGap(37, 37, 37))
             .addGroup(layout.createSequentialGroup()
@@ -270,7 +276,9 @@ public class User_Interface extends javax.swing.JFrame {
                     .addComponent(tempPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLayeredPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jButton1)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jButton1, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(statusLabel, javax.swing.GroupLayout.Alignment.TRAILING))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -321,7 +329,7 @@ public class User_Interface extends javax.swing.JFrame {
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
-                    User_Interface GUI = new User_Interface();
+                    GUI = new User_Interface();
                     GUI.setVisible(true);
                 } catch (InterruptedException ex) {
                     Logger.getLogger(User_Interface.class.getName()).log(Level.SEVERE, null, ex);
@@ -347,11 +355,12 @@ public class User_Interface extends javax.swing.JFrame {
     private javax.swing.JProgressBar outputTempBar;
     private javax.swing.JLabel outputTempLabel;
     private edu.berkeley.mhz_led_modulator_v2.RotatePanel rotatePanel1;
+    private javax.swing.JLabel statusLabel;
     private javax.swing.JPanel tempPanel;
     // End of variables declaration//GEN-END:variables
     
-    //This is a mockup worker to simulate some time-consiming loading task that would be performed at startup, with the GUI providing a loading screen...
     //Code is from: https://stackoverflow.com/questions/39565472/how-to-automatically-execute-a-task-after-jframe-is-displayed-from-within-it
+    //Perform handshaking on backgorund thread so as not to lock-up the GUI
     SwingWorker<Integer, Integer> StartupLoader = new SwingWorker<Integer, Integer>() {
         @Override
         protected Integer doInBackground() throws Exception {
@@ -420,21 +429,21 @@ public class User_Interface extends javax.swing.JFrame {
             arduinoPort = serialPorts[a];
             arduinoPort.setBaudRate(250000);
             arduinoPort.setComPortTimeouts(TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
-            System.out.println("Testing " + arduinoPort.getDescriptivePortName());
+            
+            statusLabel.setText("Testing " + arduinoPort.getDescriptivePortName());
             arduinoPort.openPort();
             arduinoPort.readBytes(readBuffer, readBuffer.length);
             recShake = Arrays.copyOfRange(readBuffer, 0, 4);
             id = Arrays.copyOfRange(readBuffer, 4, 5);
             if(Arrays.equals(HANDSHAKE, recShake)){
-                System.out.println("Arduino #" + id[0] + " is on " + arduinoPort.getDescriptivePortName());
+                statusLabel.setText("Arduino #" + id[0] + " is on " + arduinoPort.getDescriptivePortName());
                 arduinoFound = true;
             }
             arduinoPort.closePort();
         }
-        if(nPorts == 0) System.out.println("No available COM ports found on this computer.");
+        if(nPorts == 0) statusLabel.setText("No available COM ports found on this computer.");
         else if(!arduinoFound){
-            System.out.println("" + recShake[0] + " " + recShake[1] + " " + recShake[2] + " " + recShake[3] + " ");
-            System.out.println("Arduino not found.");
+            statusLabel.setText("Arduino not found.");
         }
     } 
 }
