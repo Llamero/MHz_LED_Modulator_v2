@@ -8,14 +8,26 @@ package edu.berkeley.mhz_led_modulator_v2;
 import com.fazecast.jSerialComm.SerialPort;
 import static com.fazecast.jSerialComm.SerialPort.TIMEOUT_READ_BLOCKING;
 import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import static java.lang.Math.random;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.AbstractButton;
+import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
+import javax.swing.JRadioButtonMenuItem;
 import javax.swing.SwingWorker;
 
 
@@ -25,8 +37,11 @@ import javax.swing.SwingWorker;
  */
 public class User_Interface extends javax.swing.JFrame {
     private SerialPort arduinoPort; //Initialize port object for communication to the Arduino via JSerialComm
+    private SerialPort[] arduinoPortArray; //Array for storing the COM ports that have Arduino LED drivers attached - i.e. successful handshake
     private static final byte[] HANDSHAKE = {38, 77, 46, 64}; //Four digit ID code for identifying driver Arduinos
     private static User_Interface GUI; //User interface frame
+    private ButtonGroup group; //List of buttons in Connect menu
+    private JRadioButtonMenuItem rbMenuItem; //Holder for current menu item
     /**
      * Creates new form User_Interface
      * @throws java.lang.InterruptedException
@@ -60,9 +75,10 @@ public class User_Interface extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         rotatePanel1 = new edu.berkeley.mhz_led_modulator_v2.RotatePanel();
-        jButton1 = new javax.swing.JButton();
         jSlider1 = new javax.swing.JSlider();
         statusLabel = new javax.swing.JLabel();
+        jMenuBar1 = new javax.swing.JMenuBar();
+        connectMenu = new javax.swing.JMenu();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -226,14 +242,6 @@ public class User_Interface extends javax.swing.JFrame {
                 .addComponent(rotatePanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jButton1.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
-        jButton1.setText("CONNECT");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
-            }
-        });
-
         jSlider1.setMaximum(220);
         jSlider1.setMinimum(-40);
         jSlider1.setPaintTicks(true);
@@ -246,6 +254,12 @@ public class User_Interface extends javax.swing.JFrame {
 
         statusLabel.setText("jLabel3");
 
+        connectMenu.setText("Connect");
+        connectMenu.setToolTipText("");
+        jMenuBar1.add(connectMenu);
+
+        setJMenuBar(jMenuBar1);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -253,9 +267,7 @@ public class User_Interface extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(statusLabel)
-                .addGap(218, 218, 218)
-                .addComponent(jButton1)
-                .addGap(37, 37, 37))
+                .addGap(368, 368, 368))
             .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
@@ -264,7 +276,7 @@ public class User_Interface extends javax.swing.JFrame {
                         .addGap(126, 126, 126)
                         .addComponent(tempPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(35, 35, 35)
+                        .addGap(37, 37, 37)
                         .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, 319, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -273,24 +285,20 @@ public class User_Interface extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(tempPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLayeredPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jButton1, javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(statusLabel, javax.swing.GroupLayout.Alignment.TRAILING))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLayeredPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 23, Short.MAX_VALUE)
+                        .addComponent(statusLabel)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(tempPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-
-
-    }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jSlider1StateChanged(javax.swing.event.ChangeEvent evt) {//GEN-FIRST:event_jSlider1StateChanged
         DecimalFormat df = new DecimalFormat("###.#");
@@ -339,13 +347,14 @@ public class User_Interface extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JMenu connectMenu;
     private javax.swing.JLabel inputBarLabel;
     private javax.swing.JLabel inputTempLabel;
     private javax.swing.JProgressBar inputTemprBar;
-    private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLayeredPane jLayeredPane2;
+    private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JSlider jSlider1;
     private javax.swing.JLabel ledBarLabel;
@@ -417,34 +426,61 @@ public class User_Interface extends javax.swing.JFrame {
         //Generate an array of available ports on system
         int nPorts = SerialPort.getCommPorts().length;
         SerialPort[] serialPorts = SerialPort.getCommPorts();
+        arduinoPortArray = new SerialPort[nPorts]; //Add one extra index to allow for disconnect option
         int a;
         byte[] readBuffer = new byte[5]; //Temporary buffer array to store initial reveiced stream
         byte recShake[] = new byte[4]; //Array to store recieved handshake ID
         byte id[] = new byte[1]; //Array to store Arduino ID number
-        boolean arduinoFound = false; //Variable to ID whether an Arduino is found on available COM ports
+        int arduinoPortCounter = 0; //Counter for number of ports with a successful handshake
             
         //Toggle each port, until one sends correct sequence of bytes
-        
+        group = new ButtonGroup();
         for(a = 0; a < nPorts; a++){
             arduinoPort = serialPorts[a];
             arduinoPort.setBaudRate(250000);
             arduinoPort.setComPortTimeouts(TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
-            
-            statusLabel.setText("Testing " + arduinoPort.getDescriptivePortName());
             arduinoPort.openPort();
             arduinoPort.readBytes(readBuffer, readBuffer.length);
             recShake = Arrays.copyOfRange(readBuffer, 0, 4);
             id = Arrays.copyOfRange(readBuffer, 4, 5);
             if(Arrays.equals(HANDSHAKE, recShake)){
-                statusLabel.setText("Arduino #" + id[0] + " is on " + arduinoPort.getDescriptivePortName());
-                arduinoFound = true;
+                statusLabel.setText("Arduino #" + id[0] + " is on " + arduinoPort.getDescriptivePortName()); //Show COM check status
+                
+                //Add Arduino to radio button connection list
+                rbMenuItem = new JRadioButtonMenuItem("Arduino #" + id[0]); 
+                rbMenuItem.setToolTipText(arduinoPort.getDescriptivePortName());
+                if(arduinoPortCounter == 0) rbMenuItem.setSelected(true);  //Connect to first Arduino found
+                rbMenuItem.addActionListener(new ActionListener() { //Add an action listener to the radio button so it can check when clicked
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        //Find which radio button has been selected
+                        Iterable<AbstractButton> arl = Collections.list(group.getElements()); //Create a list of buttons in connect menu
+                        for(AbstractButton ab:arl){
+                            if(ab.isSelected()){
+                                for(SerialPort b:arduinoPortArray){
+                                    if(ab.getToolTipText().equals(b.getDescriptivePortName())) statusLabel.setText(b.getDescriptivePortName() + random());
+                                           // TODO add your handling code here:
+                                }
+                            }
+                        }
+                    }
+                });
+                group.add(rbMenuItem);
+                connectMenu.add(rbMenuItem);
+                
+                 
+                //Add COM port to list of driver ports
+                arduinoPortArray[arduinoPortCounter] = arduinoPort;
+                arduinoPortCounter++;
             }
             arduinoPort.closePort();
         }
+     
+        //Inform user if no devices were found
         if(nPorts == 0) statusLabel.setText("No available COM ports found on this computer.");
-        else if(!arduinoFound){
+        else if(arduinoPortCounter < 1){
             statusLabel.setText("Arduino not found.");
         }
-    } 
+    }
 }
 
