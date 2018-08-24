@@ -459,9 +459,8 @@ public class User_Interface extends javax.swing.JFrame {
                     Iterable<AbstractButton> arl = Collections.list(group.getElements()); //Create a list of buttons in connect menu
                     for(AbstractButton ab:arl){
                         if(ab.isSelected()){
-                            for(SerialPort b:serialPorts){
+                            for(SerialPort b:serialPorts){ //Search all COM ports for on that matches radioButton (using toolTipText which contains COM port name)
                                 if(ab.getToolTipText().equals(b.getDescriptivePortName())) statusLabel.setText(b.getDescriptivePortName() + random());
-                                // TODO add your handling code here:
                             }
                         }
                     }
