@@ -37,7 +37,6 @@ import javax.swing.SwingWorker;
  */
 public class User_Interface extends javax.swing.JFrame {
     private SerialPort arduinoPort; //Initialize port object for communication to the Arduino via JSerialComm
-    private SerialPort[] arduinoPortArray; //Array for storing the COM ports that have Arduino LED drivers attached - i.e. successful handshake
     private static final byte[] HANDSHAKE = {38, 77, 46, 64}; //Four digit ID code for identifying driver Arduinos
     private static User_Interface GUI; //User interface frame
     private ButtonGroup group; //List of buttons in Connect menu
@@ -390,7 +389,7 @@ public class User_Interface extends javax.swing.JFrame {
 
             @Override
             public void windowClosing(WindowEvent e) {
-                //Do nothing...Or something...You decide!
+                arduinoPort.closePort();  //Close port connection when JFrame is closed
             }
 
             @Override
@@ -426,13 +425,11 @@ public class User_Interface extends javax.swing.JFrame {
         //Generate an array of available ports on system
         int nPorts = SerialPort.getCommPorts().length;
         SerialPort[] serialPorts = SerialPort.getCommPorts();
-        arduinoPortArray = new SerialPort[nPorts]; //Add one extra index to allow for disconnect option
         int a;
         byte[] readBuffer = new byte[5]; //Temporary buffer array to store initial reveiced stream
         byte recShake[] = new byte[4]; //Array to store recieved handshake ID
         byte id[] = new byte[1]; //Array to store Arduino ID number
-        int arduinoPortCounter = 0; //Counter for number of ports with a successful handshake
-            
+        boolean arduinoFound = false; //Variable for whether at least one arduino driver was found - i.e. successful handshake
         //Toggle each port, until one sends correct sequence of bytes
         group = new ButtonGroup();
         for(a = 0; a < nPorts; a++){
@@ -449,36 +446,35 @@ public class User_Interface extends javax.swing.JFrame {
                 //Add Arduino to radio button connection list
                 rbMenuItem = new JRadioButtonMenuItem("Arduino #" + id[0]); 
                 rbMenuItem.setToolTipText(arduinoPort.getDescriptivePortName());
-                if(arduinoPortCounter == 0) rbMenuItem.setSelected(true);  //Connect to first Arduino found
-                rbMenuItem.addActionListener(new ActionListener() { //Add an action listener to the radio button so it can check when clicked
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        //Find which radio button has been selected
-                        Iterable<AbstractButton> arl = Collections.list(group.getElements()); //Create a list of buttons in connect menu
-                        for(AbstractButton ab:arl){
-                            if(ab.isSelected()){
-                                for(SerialPort b:arduinoPortArray){
-                                    if(ab.getToolTipText().equals(b.getDescriptivePortName())) statusLabel.setText(b.getDescriptivePortName() + random());
-                                           // TODO add your handling code here:
-                                }
+                
+                //Connect to first Arduino found
+                if(!arduinoFound){
+                    rbMenuItem.setSelected(true);
+                    arduinoFound = true;
+                } 
+                
+                //Add an action listener to the radio button so it can check when clicked
+                rbMenuItem.addActionListener((ActionEvent e) -> {
+                    //Find which radio button has been selected
+                    Iterable<AbstractButton> arl = Collections.list(group.getElements()); //Create a list of buttons in connect menu
+                    for(AbstractButton ab:arl){
+                        if(ab.isSelected()){
+                            for(SerialPort b:serialPorts){
+                                if(ab.getToolTipText().equals(b.getDescriptivePortName())) statusLabel.setText(b.getDescriptivePortName() + random());
+                                // TODO add your handling code here:
                             }
                         }
                     }
                 });
                 group.add(rbMenuItem);
                 connectMenu.add(rbMenuItem);
-                
-                 
-                //Add COM port to list of driver ports
-                arduinoPortArray[arduinoPortCounter] = arduinoPort;
-                arduinoPortCounter++;
             }
             arduinoPort.closePort();
         }
      
         //Inform user if no devices were found
         if(nPorts == 0) statusLabel.setText("No available COM ports found on this computer.");
-        else if(arduinoPortCounter < 1){
+        else if(!arduinoFound){
             statusLabel.setText("Arduino not found.");
         }
     }
