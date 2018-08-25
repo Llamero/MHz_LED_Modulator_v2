@@ -392,7 +392,10 @@ public class User_Interface extends javax.swing.JFrame {
 
             @Override
             public void windowClosing(WindowEvent e) {
-                arduinoPort.closePort();  //Close port connection when JFrame is closed
+            	
+                if(arduinoPort != null) {
+                	if(arduinoPort.isOpen()) arduinoPort.closePort();  //Close port connection when JFrame is closed
+                }
             }
 
             @Override
@@ -471,10 +474,10 @@ public class User_Interface extends javax.swing.JFrame {
         }
      
         //Inform user if no devices were found
-        jProgressBar1.setValue(0); //Reset progress bar
         if(nPorts == 0) jProgressBar1.setString("No available COM ports found on this computer.");
         else if(!arduinoFound) jProgressBar1.setString("Arduino not found.");
         else jProgressBar1.setString("COM search complete");
+        jProgressBar1.setValue(0); //Reset progress bar
     }
     private void connectDevice(){
         Iterable<AbstractButton> arl = Collections.list(group.getElements()); //Create a list of buttons in connect menu
