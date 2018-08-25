@@ -18,9 +18,31 @@
 
   <dependencies>
     <dependency>
+        <groupId>org.jdesktop</groupId>
+        <artifactId>beansbinding</artifactId>
+        <version>1.2.1</version>
+    </dependency>
+    <dependency>
     	<groupId>com.fazecast</groupId>
     	<artifactId>jSerialComm</artifactId>
     	<version>[2.0.0,3.0.0)</version>
     </dependency>
   </dependencies>
+      <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <mainClass>edu.berkeley.MHz_LED_Modulator_v2b.User_Interface</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

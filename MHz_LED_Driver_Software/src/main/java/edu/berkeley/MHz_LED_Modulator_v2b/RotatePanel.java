@@ -11,10 +11,10 @@ package edu.berkeley.MHz_LED_Modulator_v2b;
 */
 import java.awt.*;
 import java.awt.geom.*;
-import java.awt.image.BufferedImage;
 import java.net.URL;
 import javax.swing.*;
  
+@SuppressWarnings("serial")
 public class RotatePanel extends JPanel {
     private Image image;
     private double currentAngle;
