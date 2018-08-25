@@ -54,7 +54,7 @@ public class User_Interface extends javax.swing.JFrame {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">                          
     private void initComponents() {
-
+int a = 1;
         tempPanel = new javax.swing.JPanel();
         outputTempBar = new javax.swing.JProgressBar();
         outputBarLabel = new javax.swing.JLabel();
