@@ -438,7 +438,7 @@ public class User_Interface extends javax.swing.JFrame {
         group = new ButtonGroup();
         for(a = 0; a < nPorts; a++){
             arduinoPort = serialPorts[a];
-            jProgressBar1.setValue(100*(a+1)/(nPorts+1));
+            jProgressBar1.setValue(100*(a+1)/(nPorts));
             jProgressBar1.setString("Testing: " +  arduinoPort.getDescriptivePortName());
             arduinoPort.setBaudRate(250000);
             arduinoPort.setComPortTimeouts(TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
@@ -471,6 +471,7 @@ public class User_Interface extends javax.swing.JFrame {
         }
      
         //Inform user if no devices were found
+        jProgressBar1.setValue(0); //Reset progress bar
         if(nPorts == 0) jProgressBar1.setString("No available COM ports found on this computer.");
         else if(!arduinoFound) jProgressBar1.setString("Arduino not found.");
         else jProgressBar1.setString("COM search complete");
