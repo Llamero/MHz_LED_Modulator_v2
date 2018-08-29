@@ -7,7 +7,6 @@ package edu.berkeley.MHz_LED_Modulator_v2b;
  */
 
 import com.fazecast.jSerialComm.SerialPort;
-import static com.fazecast.jSerialComm.SerialPort.TIMEOUT_READ_BLOCKING;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
@@ -31,10 +30,15 @@ import java.awt.Toolkit;
  */
 @SuppressWarnings("serial")
 public class User_Interface extends javax.swing.JFrame {
-	
+	//Serial variables
     private SerialPort arduinoPort; //Initialize port object for communication to the Arduino via JSerialComm
     private SerialPort[] serialPorts; //Initialize arrays of COM port objects that are currently open
-    private static final byte[] HANDSHAKE = {38, 77, 46, 64}; //Four digit ID code for identifying driver Arduinos
+    private static final byte[] STARTSHAKE = {38, 77, 46, 64}; //Four digit ID code for identifying start of Arduino communication
+    private static final byte[] ENDSHAKE = {114, 1, 97, 57}; //Four digit ID code for identifying end of Arduino communication
+    private static final int BAUDRATE = 250000; //Baudrate of serial communication
+    private boolean arduinoConnect = false; //Variable for whether the GUI if currently connected to a driver
+    
+    //GUI variables
     private static User_Interface GUI; //User interface frame
     private ButtonGroup group; //List of buttons in Connect menu
     private JRadioButtonMenuItem rbMenuItem; //Holder for current menu item
@@ -375,7 +379,7 @@ public class User_Interface extends javax.swing.JFrame {
     SwingWorker<Integer, Integer> StartupLoader = new SwingWorker<Integer, Integer>() {
         @Override
         protected Integer doInBackground() throws Exception {
-            initializeSerial(HANDSHAKE);
+            initializeSerial();
             return 100;
         }
     };
@@ -395,6 +399,7 @@ public class User_Interface extends javax.swing.JFrame {
             	
                 if(arduinoPort != null) {
                 	if(arduinoPort.isOpen()) arduinoPort.closePort();  //Close port connection when JFrame is closed
+                	arduinoConnect = false;
                 }
             }
 
@@ -427,51 +432,79 @@ public class User_Interface extends javax.swing.JFrame {
         //Here is where the magic happens! We make (a listener within) the frame start listening to the frame's own events!
         this.addWindowListener(taskStarterWindowListener);
     }
-    private void initializeSerial(byte[] HANDSHAKE) throws InterruptedException{
+    
+    private void initializeSerial() throws InterruptedException{
         //Generate an array of available ports on system
         int nPorts = SerialPort.getCommPorts().length;
         serialPorts = SerialPort.getCommPorts();
         int a;
-        byte[] readBuffer = new byte[5]; //Temporary buffer array to store initial reveiced stream
-        byte recShake[] = new byte[4]; //Array to store recieved handshake ID
-        byte nChar = 0; //variable to store number of characters in ID
-        byte[] idArray; //Array to store ID string as char array
+        byte[] readBuffer = new byte[1024]; //Temporary buffer array to store initial received stream
+        byte[] idArray = new byte[1]; //Array to store ID string as char array
         boolean arduinoFound = false; //Variable for whether at least one arduino driver was found - i.e. successful handshake
+        byte[] testArray = new byte[4]; //test for known references in data packet
+        int idLength = 0; //Variable for marking the lenght of the id in the data packet
+        int numRead; //Number of bytes in a data packet
+
         //Toggle each port, until one sends correct sequence of bytes
         group = new ButtonGroup();
         for(a = 0; a < nPorts; a++){
             arduinoPort = serialPorts[a];
             jProgressBar1.setValue(100*(a+1)/(nPorts));
-            jProgressBar1.setString("Testing: " +  arduinoPort.getDescriptivePortName());
-            arduinoPort.setBaudRate(250000);
-            arduinoPort.setComPortTimeouts(TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
+            jProgressBar1.setString("Testing " +  arduinoPort.getDescriptivePortName());
+            arduinoPort.setBaudRate(BAUDRATE);
+            arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
             arduinoPort.openPort();
-            arduinoPort.readBytes(readBuffer, readBuffer.length); //Receive handshake and ID info
-            recShake = Arrays.copyOfRange(readBuffer, 0, 4); //Store first 4 bytes into handshake array
-            nChar = readBuffer[4]; //Store last byte into ID array
-            if(Arrays.equals(HANDSHAKE, recShake)){
-                //Confirm receipt of handshake and send byte to receive ID
-                idArray = new byte[nChar]; //Create array to store incoming 
-                arduinoPort.writeBytes(new byte[] {(byte)1}, 1); //Send dummy byte to confirm recieving handshake
-                arduinoPort.readBytes(idArray, idArray.length); //Receive handshake and ID info
-                               
-                //Add Arduino to radio button connection list
-                rbMenuItem = new JRadioButtonMenuItem(new String(idArray)); 
-                rbMenuItem.setToolTipText(arduinoPort.getDescriptivePortName());
-                
-                //Connect to first Arduino found
-                if(!arduinoFound) arduinoFound = true;
-                
-                //Add an action listener to the radio button so it can check when clicked
-                rbMenuItem.addActionListener((ActionEvent e) -> {
-                    //If a radio button is selected connect to that device
-                    connectDevice();
-                });
-                group.add(rbMenuItem);
-                connectMenu.add(rbMenuItem);
-            }
-            arduinoPort.closePort();
-        }
+            numRead = arduinoPort.readBytes(readBuffer, readBuffer.length);
+            System.out.println(Arrays.toString(readBuffer));
+            
+            //If minimal packet size is received then verify contents
+			if(numRead > 9) {
+				//Search for start of packet identifier
+	            for(int c=0; c<readBuffer.length; c++) {
+	            	System.arraycopy(readBuffer, c, testArray, 0, testArray.length);
+	            	if(Arrays.equals(testArray, STARTSHAKE)) { //Verify valid packet: START (4 bytes) - length of ID (1 byte) - ID (length # of bytes) - END (4 bytes)
+	            		idLength = readBuffer[c+4]; //Retrieve putative ID length from packet
+	            		System.arraycopy(readBuffer, c+idLength+4, testArray, 0, testArray.length);
+	            		if(Arrays.equals(testArray, ENDSHAKE)) { //Look for end of packet immediately after the ID
+	            			
+	            			//If everything is valid, then add connection to the connection menu
+	            			idArray = new byte[idLength-1]; //Subtract 1 to remove null pointer which is not sent, but is counted by the Arduino
+	            			System.arraycopy(readBuffer, c+5, idArray, 0, idArray.length);
+	            			System.out.println(new String(idArray));
+	                        //Add Arduino to radio button connection list
+	                        rbMenuItem = new JRadioButtonMenuItem(new String(idArray)); 
+	                        rbMenuItem.setToolTipText(arduinoPort.getDescriptivePortName());
+	                        
+	                        arduinoFound = true;
+	                        
+	                        //Add an action listener to the radio button so it can check when clicked
+	                        rbMenuItem.addActionListener((ActionEvent e) -> {
+	                            //If a radio button is selected connect to that device
+	                            connectDevice();
+	                        });
+	                        group.add(rbMenuItem);
+	                        connectMenu.add(rbMenuItem);
+	            			break; //end loop
+
+	            		}
+	            	}
+	            }
+			}
+			arduinoPort.closePort();
+			
+	     }
+        
+        //Add disconnect button to menu options
+        rbMenuItem = new JRadioButtonMenuItem("Disconnect"); 
+        rbMenuItem.setToolTipText("Disconnect from current device");
+        
+        //Add an action listener to the radio button so it can check when clicked
+        rbMenuItem.addActionListener((ActionEvent e) -> {
+            //If a radio button is selected connect to that device
+            connectDevice();
+        });
+        group.add(rbMenuItem);
+        connectMenu.add(rbMenuItem);
      
         //Inform user if no devices were found
         if(nPorts == 0) jProgressBar1.setString("No available COM ports found on this computer.");
@@ -480,16 +513,25 @@ public class User_Interface extends javax.swing.JFrame {
         jProgressBar1.setValue(0); //Reset progress bar
     }
     private void connectDevice(){
+        if(arduinoPort != null) { //Close active open port if one is open
+        	if(arduinoPort.isOpen()) arduinoPort.closePort();
+        	arduinoConnect = false;
+        }
+        
         Iterable<AbstractButton> arl = Collections.list(group.getElements()); //Create a list of buttons in connect menu
-            for(AbstractButton ab:arl){
-                if(ab.isSelected()){
-                    for(SerialPort b:serialPorts){ //Search all COM ports for on that matches radioButton (using toolTipText which contains COM port name)
-                        if(ab.getToolTipText().equals(b.getDescriptivePortName())){
-                            statusLabel.setText(b.getDescriptivePortName() + random());
-                        }
+        for(AbstractButton ab:arl){
+            if(ab.isSelected()){
+                for(SerialPort b:serialPorts){ //Search all COM ports for on that matches radioButton (using toolTipText which contains COM port name)
+                    if(ab.getToolTipText().equals(b.getDescriptivePortName())){
+                        System.out.println(b.getDescriptivePortName() + random());
+                        arduinoPort = b;
+                        arduinoPort.openPort(); //Connect to matching port if found
+                        arduinoConnect = true;
+                        break;
                     }
                 }
             }
+        }
     }
 }
 
