@@ -22,6 +22,8 @@ import java.util.logging.Logger;
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JProgressBar;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.SwingWorker;
 import java.awt.Toolkit;
@@ -37,7 +39,7 @@ public class User_Interface extends javax.swing.JFrame {
 	//Packet structure is: byte(0) STARTBYTE -> byte(1) packet length -> byte(2) checksum -> byte(3) packet identifier -> byte(4-n) data packet;
     private SerialPort arduinoPort; //Port object for communication to the Arduino via JSerialComm
     private SerialPort[] serialPorts; //Array of COM port objects that are currently open
-    private byte[] readBuffer = new byte[512]; //Array for storing the read buffer that can contain at least one packet (max size 256 bytes);
+    private byte[] readBuffer = new byte[1024]; //Array for storing the read buffer that can contain at least one packet (max size 256 bytes);
     private byte[] headerArray = new byte [4]; //Array for storing the header on a found data packet
     private byte[] packetArray = new byte[252]; //Array for storing the data packet contents (256 bytes - 4 byte header)
     private int packetID = 0; //Packet ID: 1-ID packet, 2-temperature packet, 3-panel packet, 4-waveform packet 
@@ -57,12 +59,21 @@ public class User_Interface extends javax.swing.JFrame {
     private boolean packetFound = false; //Flag for whether a valid packet was found in the buffer
     
     //GUI variables
+    private static final DecimalFormat df1 = new DecimalFormat(".#");
     private static User_Interface GUI; //User interface frame
     private ButtonGroup group; //List of buttons in Connect menu
     private JRadioButtonMenuItem rbMenuItem; //Holder for current menu item
-    private int temp1 = 0;
-    private int temp2 = 0;
-    private int temp3 = 0;
+    private double temp1 = -9999; //Input temperature sensor - initialize to impossible value
+    private double temp2; //Output temperature sensor
+    private double temp3; //External temperature sensor
+    private double beta1 = 3470; //Beta coefficient of input temperature sensor
+    private double beta2 = 3470; //Beta coefficient of output temperature sensor
+    private double beta3 = 3470; //Beta coefficient of external temperature sensor
+    private double Ro1 = 10000; //Ro of input temperature sensor
+    private double Ro2 = 10000; //Ro coefficient of output temperature sensor
+    private double Ro3 = 10000; //Ro coefficient of external temperature sensor
+    private static final double TEMPWINDOW = 5; //Size of sliding window used to smooth sensor jitter
+    private static final double TEMPJITTER = 1.5; //How much temperature has to change to refresh display
     
     /**
      * Creates new form User_Interface
@@ -84,13 +95,19 @@ public class User_Interface extends javax.swing.JFrame {
 
         tempPanel = new javax.swing.JPanel();
         outputTempBar = new javax.swing.JProgressBar();
+        outputTempBar.setMaximum(1000);
         outputBarLabel = new javax.swing.JLabel();
         inputBarLabel = new javax.swing.JLabel();
         inputTemprBar = new javax.swing.JProgressBar();
+        inputTemprBar.setMaximum(1000);
         inputTempLabel = new javax.swing.JLabel();
+        inputTempLabel.setToolTipText("-273.15");
         outputTempLabel = new javax.swing.JLabel();
-        ledTempBar = new javax.swing.JProgressBar();
-        ledTempLabel = new javax.swing.JLabel();
+        outputTempLabel.setToolTipText("-273.15");
+        extTempBar = new javax.swing.JProgressBar();
+        extTempBar.setMaximum(1000);
+        extTempLabel = new javax.swing.JLabel();
+        extTempLabel.setToolTipText("-273.15");
         ledBarLabel = new javax.swing.JLabel();
         jLayeredPane2 = new javax.swing.JLayeredPane();
         jPanel3 = new javax.swing.JPanel();
@@ -119,17 +136,17 @@ public class User_Interface extends javax.swing.JFrame {
 
         inputTempLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
         inputTempLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        inputTempLabel.setText("25°C");
+        inputTempLabel.setText("N/A");
 
         outputTempLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
         outputTempLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        outputTempLabel.setText("25°C");
+        outputTempLabel.setText("N/A");
 
-        ledTempBar.setOrientation(1);
+        extTempBar.setOrientation(1);
 
-        ledTempLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
-        ledTempLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        ledTempLabel.setText("25°C");
+        extTempLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        extTempLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        extTempLabel.setText("N/A");
 
         ledBarLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
         ledBarLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -158,8 +175,8 @@ public class User_Interface extends javax.swing.JFrame {
                             .addComponent(outputTempBar, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(26, 26, 26)
                         .addGroup(tempPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(ledTempLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(ledTempBar, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(extTempLabel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(extTempBar, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap())
         );
         tempPanelLayout.setVerticalGroup(
@@ -173,14 +190,14 @@ public class User_Interface extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(tempPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(inputTemprBar, javax.swing.GroupLayout.PREFERRED_SIZE, 261, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(ledTempBar, javax.swing.GroupLayout.PREFERRED_SIZE, 261, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(extTempBar, javax.swing.GroupLayout.PREFERRED_SIZE, 261, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(outputTempBar, javax.swing.GroupLayout.PREFERRED_SIZE, 261, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(tempPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(tempPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(inputTempLabel)
                         .addComponent(outputTempLabel))
-                    .addComponent(ledTempLabel))
+                    .addComponent(extTempLabel))
                 .addContainerGap())
         );
 
@@ -386,8 +403,8 @@ public class User_Interface extends javax.swing.JFrame {
     private javax.swing.JProgressBar jProgressBar1;
     private javax.swing.JSlider jSlider1;
     private javax.swing.JLabel ledBarLabel;
-    private javax.swing.JProgressBar ledTempBar;
-    private javax.swing.JLabel ledTempLabel;
+    private javax.swing.JProgressBar extTempBar;
+    private javax.swing.JLabel extTempLabel;
     private javax.swing.JLabel outputBarLabel;
     private javax.swing.JProgressBar outputTempBar;
     private javax.swing.JLabel outputTempLabel;
@@ -533,12 +550,12 @@ public class User_Interface extends javax.swing.JFrame {
     private boolean readSerial() {
     	packetFound = false; //Reset pack found flag
         readLength = arduinoPort.readBytes(readBuffer, readBuffer.length);
-System.out.println(Arrays.toString(readBuffer));
+System.out.println("Buffer: " + Arrays.toString(readBuffer));
         
         //If minimal packet size is received then verify contents
 		if(readLength > 4) {
 			//Search entire buffer for all valid packets
-            for(int a=0; a<readLength-headerArray.length; a++) {
+            for(int a=0; a<(readLength-headerArray.length); a++) {
             	if(readBuffer[a] == STARTBYTE) { //Search for startbyte
             		//Copy putative header starting at STARTBYTE
             		System.arraycopy(readBuffer, a, headerArray, 0, headerArray.length); 
@@ -549,35 +566,43 @@ System.out.println(Arrays.toString(readBuffer));
             		checkSum = packetID; //Reset checksum value to start at packet ID
             		
             		//Copy putative packet starting at end of header
-            		System.arraycopy(readBuffer, a+headerArray.length, packetArray, 0, packetLength); //Copy putative header starting at STARTBYTE
-            		
-            		//Extract checksum from packet and verify it against checksum in data packet
-            		for(int b=0; b<packetLength; b++) checkSum += packetArray[b];
-System.out.println((checkSum % 256) + " " + (headerArray[2] & 0xFF));
-            		if((checkSum % 256) == (headerArray[2] & 0xFF)) { //See if checksum matches checksum in datapacket
-            			//If checksum is valid then valid packet structure - send packet to appropriate function based on packetID
-            			switch (packetID) {
-            				case IDPACKET: updateID();
-            					break;
-            				case TEMPPACKET: updateTemp();
-            					break;
-            				case PANELPACKET: updatePanel();
-            					break;
-            				case WAVEPACKET: updateWave();
-            					break;
-            			}
+            		if((a+1+headerArray.length+packetLength) < readBuffer.length && packetLength <= packetArray.length && checkSum > 0) { //Check that packet is complete before trying to copy - ignore fragmented packets at end of buffer or packets that are longer than the packetArray they will be stored in
+            			Arrays.fill(packetArray, (byte) 0); //Clear contents of packet array
+            			System.arraycopy(readBuffer, a+headerArray.length, packetArray, 0, packetLength); //Copy putative header starting at STARTBYTE
+	            		
+	            		//Extract checksum from packet and verify it against checksum in data packet
+	            		for(int b=0; b<packetLength; b++) checkSum += (packetArray[b] & 0xFF);
+System.out.println("Checksums: " + (checkSum % 256) + " " + (headerArray[2] & 0xFF));
+	            		if((checkSum % 256) == (headerArray[2] & 0xFF)) { //See if checksum matches checksum in datapacket
+	            			//If checksum is valid then valid packet structure - send packet to appropriate function based on packetID
+	            			switch (packetID) {
+	            				case IDPACKET: updateID();
+	            					break;
+	            				case TEMPPACKET: updateTemp();
+	            					break;
+	            				case PANELPACKET: updatePanel();
+	            					break;
+	            				case WAVEPACKET: updateWave();
+	            					break;
+	            			}
+	            			//Move buffer index to end of packet
+	            			a += packetLength + headerArray.length-1;
+	            		}
             		}
             	}
+            	if(!initializeComplete && packetFound) {
+            		break; //If device was initializing and ID packet was found, stop looking for more packets
+            	}
             }
-            if(packetFound) arduinoPort.writeBytes(CONFIRMBYTE, 1); //Send confirmation byte if at least on packet was found
 		}
 		return packetFound;
     }
     
     private void updateID() {
     	//Only add to menu during initialization
+    	packetFound = true; //Set packet found flag to true
+		arduinoPort.writeBytes(CONFIRMBYTE, 1); //Send confirmation byte that ID packet was received
     	if(!initializeComplete) {
-    		packetFound = true; //Set packet found flag to true
 	    	nArduino += 1; //Add one to number of found devices
 	    	rbMenuItem = new JRadioButtonMenuItem(new String(packetArray));
 	    	rbMenuItem.setToolTipText(arduinoPort.getDescriptivePortName());
@@ -596,7 +621,21 @@ System.out.println((checkSum % 256) + " " + (headerArray[2] & 0xFF));
     	//Only read packet if device is initialized
     	if(initializeComplete) {
     		packetFound = true; //Set packet found flag to true
-    		System.out.println("hi");
+    		
+    		//Extract temperature bytes and convert to unsigned ints
+    		if(temp1 == -9999) { //If this is the first reading - simply load values
+    			temp1 = packetArray[0] & 0xFF;
+        		temp2 = packetArray[1] & 0xFF;
+        		temp3 = packetArray[2] & 0xFF;
+    		}
+    		else { //Otherwise use sliding window
+    			temp1 = (packetArray[0] & 0xFF)/TEMPWINDOW + temp1 * ((TEMPWINDOW-1)/TEMPWINDOW);
+        		temp2 = (packetArray[1] & 0xFF)/TEMPWINDOW + temp2 * ((TEMPWINDOW-1)/TEMPWINDOW);
+        		temp3 = (packetArray[2] & 0xFF)/TEMPWINDOW + temp3 * ((TEMPWINDOW-1)/TEMPWINDOW);
+    		}
+    		ADCtoCelcius(temp1, inputTemprBar, inputTempLabel);
+    		ADCtoCelcius(temp2, outputTempBar, outputTempLabel);
+    		ADCtoCelcius(temp3, extTempBar, extTempLabel);
     	}
     }
     private void updatePanel() {
@@ -605,5 +644,33 @@ System.out.println((checkSum % 256) + " " + (headerArray[2] & 0xFF));
     private void updateWave() {
     	
     }
+    
+    void ADCtoCelcius(double ADC, JProgressBar bar, JLabel label) {
+    	//If thermistor is sending valid measurement, output result
+    	double currentTemp = Double.parseDouble(label.getToolTipText());
+    	if(ADC > 2) {    	
+	    	//Math from: https://learn.adafruit.com/thermistor/using-a-thermistor
+	    	double conversion = (-4700D*ADC) / (ADC-255D);
+	    	conversion = conversion/Ro1;
+	    	conversion = Math.log(conversion);
+	    	conversion /= beta1;
+	    	conversion += 1D/(25D+273.15D);
+	    	conversion = 1D/conversion;
+	    	conversion -= 273.15D;
+	    	if(conversion > (currentTemp + TEMPJITTER) || conversion < (currentTemp - TEMPJITTER)) { //If temp has sufficiently changed - update temp
+		    	label.setToolTipText(Double.toString(conversion));
+		    	bar.setValue((int) (conversion*10D));
+		    	label.setText(Math.round(conversion) + "°C");
+	    	}
+
+    	}
+    	//If measurement is 0, thermistor is disconnected
+    	else {
+    		bar.setValue((int) 0);
+    		label.setText("N/A");
+    	}
+    }
 }
+
+
 
