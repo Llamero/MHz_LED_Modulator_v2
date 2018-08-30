@@ -7,6 +7,9 @@ package edu.berkeley.MHz_LED_Modulator_v2b;
  */
 
 import com.fazecast.jSerialComm.SerialPort;
+import com.fazecast.jSerialComm.SerialPortDataListener;
+import com.fazecast.jSerialComm.SerialPortEvent;
+
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
@@ -31,17 +34,36 @@ import java.awt.Toolkit;
 @SuppressWarnings("serial")
 public class User_Interface extends javax.swing.JFrame {
 	//Serial variables
-    private SerialPort arduinoPort; //Initialize port object for communication to the Arduino via JSerialComm
-    private SerialPort[] serialPorts; //Initialize arrays of COM port objects that are currently open
-    private static final byte[] STARTSHAKE = {38, 77, 46, 64}; //Four digit ID code for identifying start of Arduino communication
-    private static final byte[] ENDSHAKE = {114, 1, 97, 57}; //Four digit ID code for identifying end of Arduino communication
+	//Packet structure is: byte(0) STARTBYTE -> byte(1) packet length -> byte(2) checksum -> byte(3) packet identifier -> byte(4-n) data packet;
+    private SerialPort arduinoPort; //Port object for communication to the Arduino via JSerialComm
+    private SerialPort[] serialPorts; //Array of COM port objects that are currently open
+    private byte[] readBuffer = new byte[512]; //Array for storing the read buffer that can contain at least one packet (max size 256 bytes);
+    private byte[] headerArray = new byte [4]; //Array for storing the header on a found data packet
+    private byte[] packetArray = new byte[252]; //Array for storing the data packet contents (256 bytes - 4 byte header)
+    private int packetID = 0; //Packet ID: 1-ID packet, 2-temperature packet, 3-panel packet, 4-waveform packet 
+    private int packetLength = 0; //length of the packet
+    private int checkSum = 0; //packet checksum
+    private int readLength = 0; //Length of read Buffer
+    private static final byte[] CONFIRMBYTE = {0}; //Send byte to confirm receipt of packet
+    private static final byte STARTBYTE = 0; //Identifies start of packet
+    private static final byte IDPACKET = 1; //Identifies packet as device identification packet
+    private static final byte TEMPPACKET = 2; //Identifies packet as temperature recordings
+    private static final byte PANELPACKET = 3; //Identifies packet as panel status
+    private static final byte WAVEPACKET = 4; //Identifies packet as recorded analog waveform
     private static final int BAUDRATE = 250000; //Baudrate of serial communication
-    private boolean arduinoConnect = false; //Variable for whether the GUI if currently connected to a driver
+    private boolean arduinoConnect = false; //Whether the GUI if currently connected to a driver
+    private int nArduino = 0; //Number of Arduino devices found connected to computer
+    private boolean initializeComplete = false; //Identifies if initial startup was complete (prevents things like IDs to be rewritten in connection menu)
+    private boolean packetFound = false; //Flag for whether a valid packet was found in the buffer
     
     //GUI variables
     private static User_Interface GUI; //User interface frame
     private ButtonGroup group; //List of buttons in Connect menu
     private JRadioButtonMenuItem rbMenuItem; //Holder for current menu item
+    private int temp1 = 0;
+    private int temp2 = 0;
+    private int temp3 = 0;
+    
     /**
      * Creates new form User_Interface
      * @throws java.lang.InterruptedException
@@ -437,67 +459,25 @@ public class User_Interface extends javax.swing.JFrame {
         //Generate an array of available ports on system
         int nPorts = SerialPort.getCommPorts().length;
         serialPorts = SerialPort.getCommPorts();
-        int a;
-        byte[] readBuffer = new byte[1024]; //Temporary buffer array to store initial received stream
-        byte[] idArray = new byte[1]; //Array to store ID string as char array
-        boolean arduinoFound = false; //Variable for whether at least one arduino driver was found - i.e. successful handshake
-        byte[] testArray = new byte[4]; //test for known references in data packet
-        int idLength = 0; //Variable for marking the lenght of the id in the data packet
-        int numRead; //Number of bytes in a data packet
 
-        //Toggle each port, until one sends correct sequence of bytes
+
+        //Toggle each port checking for any that send an ID packet
         group = new ButtonGroup();
-        for(a = 0; a < nPorts; a++){
+        for(int a = 0; a < nPorts; a++){
             arduinoPort = serialPorts[a];
             jProgressBar1.setValue(100*(a+1)/(nPorts));
             jProgressBar1.setString("Testing " +  arduinoPort.getDescriptivePortName());
             arduinoPort.setBaudRate(BAUDRATE);
             arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
             arduinoPort.openPort();
-            numRead = arduinoPort.readBytes(readBuffer, readBuffer.length);
-            System.out.println(Arrays.toString(readBuffer));
-            
-            //If minimal packet size is received then verify contents
-			if(numRead > 9) {
-				//Search for start of packet identifier
-	            for(int c=0; c<readBuffer.length; c++) {
-	            	System.arraycopy(readBuffer, c, testArray, 0, testArray.length);
-	            	if(Arrays.equals(testArray, STARTSHAKE)) { //Verify valid packet: START (4 bytes) - length of ID (1 byte) - ID (length # of bytes) - END (4 bytes)
-	            		idLength = readBuffer[c+4]; //Retrieve putative ID length from packet
-	            		System.arraycopy(readBuffer, c+idLength+4, testArray, 0, testArray.length);
-	            		if(Arrays.equals(testArray, ENDSHAKE)) { //Look for end of packet immediately after the ID
-	            			
-	            			//If everything is valid, then add connection to the connection menu
-	            			idArray = new byte[idLength-1]; //Subtract 1 to remove null pointer which is not sent, but is counted by the Arduino
-	            			System.arraycopy(readBuffer, c+5, idArray, 0, idArray.length);
-	            			System.out.println(new String(idArray));
-	                        //Add Arduino to radio button connection list
-	                        rbMenuItem = new JRadioButtonMenuItem(new String(idArray)); 
-	                        rbMenuItem.setToolTipText(arduinoPort.getDescriptivePortName());
-	                        
-	                        arduinoFound = true;
-	                        
-	                        //Add an action listener to the radio button so it can check when clicked
-	                        rbMenuItem.addActionListener((ActionEvent e) -> {
-	                            //If a radio button is selected connect to that device
-	                            connectDevice();
-	                        });
-	                        group.add(rbMenuItem);
-	                        connectMenu.add(rbMenuItem);
-	            			break; //end loop
-
-	            		}
-	            	}
-	            }
-			}
-			arduinoPort.closePort();
-			
+            readSerial();
+			arduinoPort.closePort();			
 	     }
         
         //Add disconnect button to menu options
         rbMenuItem = new JRadioButtonMenuItem("Disconnect"); 
         rbMenuItem.setToolTipText("Disconnect from current device");
-        
+        rbMenuItem.setSelected(true);
         //Add an action listener to the radio button so it can check when clicked
         rbMenuItem.addActionListener((ActionEvent e) -> {
             //If a radio button is selected connect to that device
@@ -508,10 +488,14 @@ public class User_Interface extends javax.swing.JFrame {
      
         //Inform user if no devices were found
         if(nPorts == 0) jProgressBar1.setString("No available COM ports found on this computer.");
-        else if(!arduinoFound) jProgressBar1.setString("Arduino not found.");
-        else jProgressBar1.setString("COM search complete");
+        else if(nArduino == 0) jProgressBar1.setString("Arduino not found.");
+        else if(nArduino == 1) jProgressBar1.setString(nArduino + " device found.");
+        else jProgressBar1.setString(nArduino + " devices found.");
         jProgressBar1.setValue(0); //Reset progress bar
+        
+        initializeComplete = true;
     }
+    
     private void connectDevice(){
         if(arduinoPort != null) { //Close active open port if one is open
         	if(arduinoPort.isOpen()) arduinoPort.closePort();
@@ -525,13 +509,101 @@ public class User_Interface extends javax.swing.JFrame {
                     if(ab.getToolTipText().equals(b.getDescriptivePortName())){
                         System.out.println(b.getDescriptivePortName() + random());
                         arduinoPort = b;
+                        arduinoPort.setBaudRate(BAUDRATE);
+                        arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
                         arduinoPort.openPort(); //Connect to matching port if found
+                        
+                        //Add a data listener to the port to catch any incoming packets
+                        arduinoPort.addDataListener(new SerialPortDataListener() {
+                    	   public int getListeningEvents() { return SerialPort.LISTENING_EVENT_DATA_AVAILABLE; }
+                    	   @Override
+                    	   public void serialEvent(SerialPortEvent event)
+                    	   {
+                    	      readSerial();
+                    	   }
+                        });
                         arduinoConnect = true;
                         break;
                     }
                 }
             }
         }
+    }
+    
+    private boolean readSerial() {
+    	packetFound = false; //Reset pack found flag
+        readLength = arduinoPort.readBytes(readBuffer, readBuffer.length);
+System.out.println(Arrays.toString(readBuffer));
+        
+        //If minimal packet size is received then verify contents
+		if(readLength > 4) {
+			//Search entire buffer for all valid packets
+            for(int a=0; a<readLength-headerArray.length; a++) {
+            	if(readBuffer[a] == STARTBYTE) { //Search for startbyte
+            		//Copy putative header starting at STARTBYTE
+            		System.arraycopy(readBuffer, a, headerArray, 0, headerArray.length); 
+            	    
+            		//Extract header bytes and convert uint8_t to int (variable & 0xFF) - https://stackoverflow.com/questions/14071361/java-how-to-parse-uint8-in-java 
+            	    packetLength = headerArray[1] & 0xFF; //length of the packet
+            		packetID = headerArray[3] & 0xFF; //Packet ID
+            		checkSum = packetID; //Reset checksum value to start at packet ID
+            		
+            		//Copy putative packet starting at end of header
+            		System.arraycopy(readBuffer, a+headerArray.length, packetArray, 0, packetLength); //Copy putative header starting at STARTBYTE
+            		
+            		//Extract checksum from packet and verify it against checksum in data packet
+            		for(int b=0; b<packetLength; b++) checkSum += packetArray[b];
+System.out.println((checkSum % 256) + " " + (headerArray[2] & 0xFF));
+            		if((checkSum % 256) == (headerArray[2] & 0xFF)) { //See if checksum matches checksum in datapacket
+            			//If checksum is valid then valid packet structure - send packet to appropriate function based on packetID
+            			switch (packetID) {
+            				case IDPACKET: updateID();
+            					break;
+            				case TEMPPACKET: updateTemp();
+            					break;
+            				case PANELPACKET: updatePanel();
+            					break;
+            				case WAVEPACKET: updateWave();
+            					break;
+            			}
+            		}
+            	}
+            }
+            if(packetFound) arduinoPort.writeBytes(CONFIRMBYTE, 1); //Send confirmation byte if at least on packet was found
+		}
+		return packetFound;
+    }
+    
+    private void updateID() {
+    	//Only add to menu during initialization
+    	if(!initializeComplete) {
+    		packetFound = true; //Set packet found flag to true
+	    	nArduino += 1; //Add one to number of found devices
+	    	rbMenuItem = new JRadioButtonMenuItem(new String(packetArray));
+	    	rbMenuItem.setToolTipText(arduinoPort.getDescriptivePortName());
+	        group.add(rbMenuItem);
+	        connectMenu.add(rbMenuItem);
+	        
+	    	//Add an action listener to the radio button so it can check when clicked
+	        rbMenuItem.addActionListener((ActionEvent e) -> {
+	            //If a radio button is selected connect to that device
+	            connectDevice();
+	        });
+    	}
+    }
+    
+    private void updateTemp() {
+    	//Only read packet if device is initialized
+    	if(initializeComplete) {
+    		packetFound = true; //Set packet found flag to true
+    		System.out.println("hi");
+    	}
+    }
+    private void updatePanel() {
+    	
+    }
+    private void updateWave() {
+    	
     }
 }
 
