@@ -675,7 +675,7 @@ System.out.println("Checksums: " + (checkSum % 256) + " " + (headerArray[2] & 0x
 	       	if(dialPercent > (currentPercent + DIALJITTER) || dialPercent< (currentPercent - DIALJITTER) || dialPercent == 0 || dialPercent == 100) {
 		        jLabel2.setText(df1.format(dialPercent) + "%");
 		        rotatePanel1.rotateWithParam((int) dialAngle);
-		        rotatePanel1.setToolTipText(Double.toString(dialPercent));
+		        rotatePanel1.setToolTipText(Double.toString(dialPercent)); //test
 	       	}
     	}
     }
