@@ -27,6 +27,9 @@ import javax.swing.JProgressBar;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.SwingWorker;
 import java.awt.Toolkit;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.GroupLayout;
+import javax.swing.LayoutStyle.ComponentPlacement;
 
 
 /**
@@ -59,7 +62,7 @@ public class User_Interface extends javax.swing.JFrame {
     private boolean packetFound = false; //Flag for whether a valid packet was found in the buffer
     
     //GUI variables
-    private static final DecimalFormat df1 = new DecimalFormat(".#");
+    private static final DecimalFormat df1 = new DecimalFormat("##.#");
     private static User_Interface GUI; //User interface frame
     private ButtonGroup group; //List of buttons in Connect menu
     private JRadioButtonMenuItem rbMenuItem; //Holder for current menu item
@@ -72,8 +75,10 @@ public class User_Interface extends javax.swing.JFrame {
     private double Ro1 = 10000; //Ro of input temperature sensor
     private double Ro2 = 10000; //Ro coefficient of output temperature sensor
     private double Ro3 = 10000; //Ro coefficient of external temperature sensor
-    private static final double TEMPWINDOW = 5; //Size of sliding window used to smooth sensor jitter
-    private static final double TEMPJITTER = 1.5; //How much temperature has to change to refresh display
+    private static final double TEMPWINDOW = 2; //Size of sliding window used to smooth sensor jitter
+    private static final double TEMPJITTER = 0.5; //How much temperature has to change to refresh display (in degrees C)
+    private static final double DIALJITTER = 0.5; //How much knob has to change to refresh display (in percent)
+    
     
     /**
      * Creates new form User_Interface
@@ -98,8 +103,8 @@ public class User_Interface extends javax.swing.JFrame {
         outputTempBar.setMaximum(1000);
         outputBarLabel = new javax.swing.JLabel();
         inputBarLabel = new javax.swing.JLabel();
-        inputTemprBar = new javax.swing.JProgressBar();
-        inputTemprBar.setMaximum(1000);
+        inputTempBar = new javax.swing.JProgressBar();
+        inputTempBar.setMaximum(1000);
         inputTempLabel = new javax.swing.JLabel();
         inputTempLabel.setToolTipText("-273.15");
         outputTempLabel = new javax.swing.JLabel();
@@ -114,8 +119,7 @@ public class User_Interface extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         rotatePanel1 = new edu.berkeley.MHz_LED_Modulator_v2b.RotatePanel();
-        jSlider1 = new javax.swing.JSlider();
-        statusLabel = new javax.swing.JLabel();
+        rotatePanel1.setToolTipText("-50");
         jProgressBar1 = new javax.swing.JProgressBar();
         jMenuBar1 = new javax.swing.JMenuBar();
         connectMenu = new javax.swing.JMenu();
@@ -132,7 +136,7 @@ public class User_Interface extends javax.swing.JFrame {
         inputBarLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         inputBarLabel.setText("Input");
 
-        inputTemprBar.setOrientation(1);
+        inputTempBar.setOrientation(1);
 
         inputTempLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
         inputTempLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -167,7 +171,7 @@ public class User_Interface extends javax.swing.JFrame {
                         .addComponent(ledBarLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(tempPanelLayout.createSequentialGroup()
                         .addGroup(tempPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(inputTemprBar, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(inputTempBar, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(inputTempLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(27, 27, 27)
                         .addGroup(tempPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -189,7 +193,7 @@ public class User_Interface extends javax.swing.JFrame {
                     .addComponent(ledBarLabel))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(tempPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(inputTemprBar, javax.swing.GroupLayout.PREFERRED_SIZE, 261, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(inputTempBar, javax.swing.GroupLayout.PREFERRED_SIZE, 261, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(extTempBar, javax.swing.GroupLayout.PREFERRED_SIZE, 261, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(outputTempBar, javax.swing.GroupLayout.PREFERRED_SIZE, 261, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -215,7 +219,7 @@ public class User_Interface extends javax.swing.JFrame {
 
         jLabel2.setFont(new java.awt.Font("Tahoma", 0, 36)); // NOI18N
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel2.setText("15.0%");
+        jLabel2.setText("N/A");
         jLabel2.setToolTipText("");
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
@@ -245,6 +249,7 @@ public class User_Interface extends javax.swing.JFrame {
 
         rotatePanel1.setImage(Toolkit.getDefaultToolkit().getImage(User_Interface.class.getResource("/images/knob2-resized.png")));
         rotatePanel1.setOpaque(false);
+        rotatePanel1.rotateWithParam(270);
 
         javax.swing.GroupLayout rotatePanel1Layout = new javax.swing.GroupLayout(rotatePanel1);
         rotatePanel1.setLayout(rotatePanel1Layout);
@@ -279,19 +284,7 @@ public class User_Interface extends javax.swing.JFrame {
                 .addComponent(rotatePanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jSlider1.setMaximum(220);
-        jSlider1.setMinimum(-40);
-        jSlider1.setPaintTicks(true);
-        jSlider1.setValue(0);
-        jSlider1.addChangeListener(new javax.swing.event.ChangeListener() {
-            public void stateChanged(javax.swing.event.ChangeEvent evt) {
-                jSlider1StateChanged(evt);
-            }
-        });
-
-        statusLabel.setText("jLabel3");
-
-        jProgressBar1.setValue(50);
+        jProgressBar1.setValue(0);
         jProgressBar1.setStringPainted(true);
 
         connectMenu.setText("Connect");
@@ -301,54 +294,37 @@ public class User_Interface extends javax.swing.JFrame {
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(statusLabel)
-                .addGap(368, 368, 368))
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(jLayeredPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(126, 126, 126)
-                        .addComponent(tempPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(37, 37, 37)
-                        .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, 319, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(122, 122, 122)
-                        .addComponent(jProgressBar1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                .addContainerGap())
+        	layout.createParallelGroup(Alignment.LEADING)
+        		.addGroup(layout.createSequentialGroup()
+        			.addGroup(layout.createParallelGroup(Alignment.LEADING)
+        				.addGroup(layout.createSequentialGroup()
+        					.addContainerGap()
+        					.addComponent(jLayeredPane2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+        					.addGap(126)
+        					.addComponent(tempPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+        					.addGap(0, 0, Short.MAX_VALUE))
+        				.addGroup(layout.createSequentialGroup()
+        					.addGap(478)
+        					.addComponent(jProgressBar1, GroupLayout.DEFAULT_SIZE, 324, Short.MAX_VALUE)))
+        			.addContainerGap())
         );
         layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLayeredPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 23, Short.MAX_VALUE)
-                        .addComponent(statusLabel)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jSlider1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(tempPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jProgressBar1, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap())
+        	layout.createParallelGroup(Alignment.LEADING)
+        		.addGroup(layout.createSequentialGroup()
+        			.addContainerGap()
+        			.addGroup(layout.createParallelGroup(Alignment.LEADING)
+        				.addComponent(jLayeredPane2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+        				.addGroup(layout.createSequentialGroup()
+        					.addComponent(tempPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+        					.addPreferredGap(ComponentPlacement.RELATED, 92, Short.MAX_VALUE)
+        					.addComponent(jProgressBar1, GroupLayout.PREFERRED_SIZE, 25, GroupLayout.PREFERRED_SIZE)))
+        			.addContainerGap())
         );
+        getContentPane().setLayout(layout);
 
         pack();
     }// </editor-fold>                        
-
-    private void jSlider1StateChanged(javax.swing.event.ChangeEvent evt) {                                      
-        DecimalFormat df = new DecimalFormat("###.#");
-        jLabel2.setText("" + df.format((jSlider1.getValue()+40)/2.6) + "%");
-        rotatePanel1.rotateWithParam(jSlider1.getValue());
-    }                                     
 
     /**
      * @param args the command line arguments
@@ -394,14 +370,13 @@ public class User_Interface extends javax.swing.JFrame {
     private javax.swing.JMenu connectMenu;
     private javax.swing.JLabel inputBarLabel;
     private javax.swing.JLabel inputTempLabel;
-    private javax.swing.JProgressBar inputTemprBar;
+    private javax.swing.JProgressBar inputTempBar;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLayeredPane jLayeredPane2;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JProgressBar jProgressBar1;
-    private javax.swing.JSlider jSlider1;
     private javax.swing.JLabel ledBarLabel;
     private javax.swing.JProgressBar extTempBar;
     private javax.swing.JLabel extTempLabel;
@@ -409,7 +384,6 @@ public class User_Interface extends javax.swing.JFrame {
     private javax.swing.JProgressBar outputTempBar;
     private javax.swing.JLabel outputTempLabel;
     private edu.berkeley.MHz_LED_Modulator_v2b.RotatePanel rotatePanel1;
-    private javax.swing.JLabel statusLabel;
     private javax.swing.JPanel tempPanel;
     // End of variables declaration                   
     
@@ -507,7 +481,7 @@ public class User_Interface extends javax.swing.JFrame {
         if(nPorts == 0) jProgressBar1.setString("No available COM ports found on this computer.");
         else if(nArduino == 0) jProgressBar1.setString("Arduino not found.");
         else if(nArduino == 1) jProgressBar1.setString(nArduino + " device found.");
-        else jProgressBar1.setString(nArduino + " devices found.");
+        else jProgressBar1.setString("Disconnected: " + nArduino + " devices available.");
         jProgressBar1.setValue(0); //Reset progress bar
         
         initializeComplete = true;
@@ -540,11 +514,64 @@ public class User_Interface extends javax.swing.JFrame {
                     	   }
                         });
                         arduinoConnect = true;
+                        jProgressBar1.setString("Connected to: " + ab.getText());
                         break;
                     }
                 }
             }
         }
+        if(!arduinoConnect) {
+            if(nArduino == 1) jProgressBar1.setString("Disconnected: " + nArduino + " device available.");
+            else jProgressBar1.setString("Disconnected: " + nArduino + " devices available.");
+            resetDisplay();
+        }
+    }
+    
+    private void resetDisplay() {
+        
+		inputTempLabel.setToolTipText("-273.15");
+		outputTempLabel.setToolTipText("-273.15");
+		extTempLabel.setToolTipText("-273.15");
+	
+		outputTempBar.setOrientation(1);
+		outputTempBar.setValue(0);
+
+        outputBarLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        outputBarLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        outputBarLabel.setText("Output");
+
+        inputBarLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        inputBarLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        inputBarLabel.setText("Input");
+
+        inputTempBar.setOrientation(1);
+        inputTempBar.setValue(0);
+
+        inputTempLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        inputTempLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        inputTempLabel.setText("N/A");
+
+        outputTempLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        outputTempLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        outputTempLabel.setText("N/A");
+
+        extTempBar.setOrientation(1);
+        extTempBar.setValue(0);
+
+        extTempLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        extTempLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        extTempLabel.setText("N/A");
+
+        ledBarLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        ledBarLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        ledBarLabel.setText("LED");
+
+        jProgressBar1.setValue(0);
+        jProgressBar1.setStringPainted(true);
+        
+        jLabel2.setText("N/A");
+        rotatePanel1.rotateWithParam(270);
+        rotatePanel1.setToolTipText("-50");
     }
     
     private boolean readSerial() {
@@ -633,13 +660,24 @@ System.out.println("Checksums: " + (checkSum % 256) + " " + (headerArray[2] & 0x
         		temp2 = (packetArray[1] & 0xFF)/TEMPWINDOW + temp2 * ((TEMPWINDOW-1)/TEMPWINDOW);
         		temp3 = (packetArray[2] & 0xFF)/TEMPWINDOW + temp3 * ((TEMPWINDOW-1)/TEMPWINDOW);
     		}
-    		ADCtoCelcius(temp1, inputTemprBar, inputTempLabel);
+    		ADCtoCelcius(temp1, inputTempBar, inputTempLabel);
     		ADCtoCelcius(temp2, outputTempBar, outputTempLabel);
     		ADCtoCelcius(temp3, extTempBar, extTempLabel);
     	}
     }
     private void updatePanel() {
-    	
+    	//Only read packet if device is initialized
+    	if(initializeComplete) {
+    		double currentPercent = Double.parseDouble(rotatePanel1.getToolTipText());
+	    	double dialADC = (double) (packetArray[0] & 0xFF);
+	     	double dialPercent = dialADC/255*100D;
+	       	double dialAngle = (dialPercent*1.7D)+25D;
+	       	if(dialPercent > (currentPercent + DIALJITTER) || dialPercent< (currentPercent - DIALJITTER) || dialPercent == 0 || dialPercent == 100) {
+		        jLabel2.setText(df1.format(dialPercent) + "%");
+		        rotatePanel1.rotateWithParam((int) dialAngle);
+		        rotatePanel1.setToolTipText(Double.toString(dialPercent));
+	       	}
+    	}
     }
     private void updateWave() {
     	
