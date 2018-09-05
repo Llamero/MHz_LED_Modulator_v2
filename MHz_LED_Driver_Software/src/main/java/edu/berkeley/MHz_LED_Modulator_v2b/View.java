@@ -40,8 +40,7 @@ import javax.swing.SwingConstants;
  */
 @SuppressWarnings("serial")
 public class View extends javax.swing.JFrame {
-    //Initialize Serial class
-	private edu.berkeley.MHz_LED_Modulator_v2b.Controller serial;
+	private Controller controller; //Instance of controller so events can be passed back to controller
 	
     //GUI variables
     private static final DecimalFormat df1 = new DecimalFormat("##.#");
@@ -57,12 +56,38 @@ public class View extends javax.swing.JFrame {
     private static final byte TEMPPACKET = 2; //Identifies packet as temperature recordings
     private static final byte PANELPACKET = 3; //Identifies packet as panel status
     private static final byte WAVEPACKET = 4; //Identifies packet as recorded analog waveform
+	
     
+    public void setController(Controller controller) {
+    	this.controller = controller;
+    }
     /**
      * Creates new form User_Interface
      * @throws java.lang.InterruptedException
      */
     View() throws InterruptedException {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(View.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(View.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(View.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(View.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
         initComponents(); //Initialize interface components
         initSelfListeners(); //Setup listeners for initialization events to happen when GUI appears
     }
@@ -484,20 +509,7 @@ public class View extends javax.swing.JFrame {
     
 
    
-    private void updatePanel() {
-    	//Only read packet if device is initialized
-    	if(initializeComplete) {
-    		double currentPercent = Double.parseDouble(rotatePanel1.getToolTipText());
-	    	double dialADC = (double) (packetArray[0] & 0xFF);
-	     	double dialPercent = dialADC/255*100D;
-	       	double dialAngle = (dialPercent*1.7D)+25D;
-	       	if(dialPercent > (currentPercent + DIALJITTER) || dialPercent< (currentPercent - DIALJITTER) || dialPercent == 0 || dialPercent == 100) {
-		        jLabel2.setText(df1.format(dialPercent) + "%");
-		        rotatePanel1.rotateWithParam((int) dialAngle);
-		        rotatePanel1.setToolTipText(Double.toString(dialPercent));
-	       	}
-    	}
-    }
+
     private void updateWave() {
     	
     }
