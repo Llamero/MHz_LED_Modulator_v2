@@ -1,18 +1,25 @@
 1-9: System identifiers
-1 - ID
+1 - ID packet
+2 - temperature packet
+3 - panel interface packet
+4 - waveform packet
 
-11-19: Temperature Status
-11 - input temp
-12 - output temp
-13 - external temp
-14 - Overheat state
+Temperature packet
+byte 1 - input temp
+byte 2 - output temp
+byte 3 - external temp
+byte 4 - Overheat state
 
-21-29: Panel interface
-21 - potentiometer
-22 - toggle switch
+Panel interface packet
+byte 1 - potentiometer
+byte 2 - toggle switch
 
-31-39: Streamed data packets
-31 - detected waveform packet
+Waveform packet
+byte[] - recorded waveform
+
+260
+
+
 
 
 

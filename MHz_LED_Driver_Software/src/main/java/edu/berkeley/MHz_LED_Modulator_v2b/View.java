@@ -30,6 +30,8 @@ import java.awt.Toolkit;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.GroupLayout;
 import javax.swing.LayoutStyle.ComponentPlacement;
+import java.awt.Font;
+import javax.swing.SwingConstants;
 
 
 /**
@@ -37,54 +39,30 @@ import javax.swing.LayoutStyle.ComponentPlacement;
  * @author Ben
  */
 @SuppressWarnings("serial")
-public class User_Interface extends javax.swing.JFrame {
-	//Serial variables
-	//Packet structure is: byte(0) STARTBYTE -> byte(1) packet length -> byte(2) checksum -> byte(3) packet identifier -> byte(4-n) data packet;
-    private SerialPort arduinoPort; //Port object for communication to the Arduino via JSerialComm
-    private SerialPort[] serialPorts; //Array of COM port objects that are currently open
-    private byte[] readBuffer = new byte[1024]; //Array for storing the read buffer that can contain at least one packet (max size 256 bytes);
-    private byte[] headerArray = new byte [4]; //Array for storing the header on a found data packet
-    private byte[] packetArray = new byte[252]; //Array for storing the data packet contents (256 bytes - 4 byte header)
-    private int packetID = 0; //Packet ID: 1-ID packet, 2-temperature packet, 3-panel packet, 4-waveform packet 
-    private int packetLength = 0; //length of the packet
-    private int checkSum = 0; //packet checksum
-    private int readLength = 0; //Length of read Buffer
-    private static final byte[] CONFIRMBYTE = {0}; //Send byte to confirm receipt of packet
-    private static final byte STARTBYTE = 0; //Identifies start of packet
+public class View extends javax.swing.JFrame {
+    //Initialize Serial class
+	private edu.berkeley.MHz_LED_Modulator_v2b.Controller serial;
+	
+    //GUI variables
+    private static final DecimalFormat df1 = new DecimalFormat("##.#");
+    private ButtonGroup group; //List of buttons in Connect menu
+    private JRadioButtonMenuItem rbMenuItem; //Holder for current menu item
+
+    
+    //Serial variables
+    private boolean initializeComplete = false; //Identifies if initial startup was complete (prevents things like IDs to be rewritten in connection menu)
+    private byte[] packetArray; //Array for storing a data packet from serial
+    private int packetID; //Packet ID number from serial 
     private static final byte IDPACKET = 1; //Identifies packet as device identification packet
     private static final byte TEMPPACKET = 2; //Identifies packet as temperature recordings
     private static final byte PANELPACKET = 3; //Identifies packet as panel status
     private static final byte WAVEPACKET = 4; //Identifies packet as recorded analog waveform
-    private static final int BAUDRATE = 250000; //Baudrate of serial communication
-    private boolean arduinoConnect = false; //Whether the GUI if currently connected to a driver
-    private int nArduino = 0; //Number of Arduino devices found connected to computer
-    private boolean initializeComplete = false; //Identifies if initial startup was complete (prevents things like IDs to be rewritten in connection menu)
-    private boolean packetFound = false; //Flag for whether a valid packet was found in the buffer
-    
-    //GUI variables
-    private static final DecimalFormat df1 = new DecimalFormat("##.#");
-    private static User_Interface GUI; //User interface frame
-    private ButtonGroup group; //List of buttons in Connect menu
-    private JRadioButtonMenuItem rbMenuItem; //Holder for current menu item
-    private double temp1 = -9999; //Input temperature sensor - initialize to impossible value
-    private double temp2; //Output temperature sensor
-    private double temp3; //External temperature sensor
-    private double beta1 = 3470; //Beta coefficient of input temperature sensor
-    private double beta2 = 3470; //Beta coefficient of output temperature sensor
-    private double beta3 = 3470; //Beta coefficient of external temperature sensor
-    private double Ro1 = 10000; //Ro of input temperature sensor
-    private double Ro2 = 10000; //Ro coefficient of output temperature sensor
-    private double Ro3 = 10000; //Ro coefficient of external temperature sensor
-    private static final double TEMPWINDOW = 2; //Size of sliding window used to smooth sensor jitter
-    private static final double TEMPJITTER = 0.5; //How much temperature has to change to refresh display (in degrees C)
-    private static final double DIALJITTER = 0.5; //How much knob has to change to refresh display (in percent)
-    
     
     /**
      * Creates new form User_Interface
      * @throws java.lang.InterruptedException
      */
-    private User_Interface() throws InterruptedException {
+    View() throws InterruptedException {
         initComponents(); //Initialize interface components
         initSelfListeners(); //Setup listeners for initialization events to happen when GUI appears
     }
@@ -214,7 +192,7 @@ public class User_Interface extends javax.swing.JFrame {
         jPanel3.setPreferredSize(new java.awt.Dimension(382, 382));
 
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel1.setIcon(new ImageIcon(User_Interface.class.getResource("/images/Dialscale2.png"))); // NOI18N
+        jLabel1.setIcon(new ImageIcon(View.class.getResource("/images/Dialscale2.png"))); // NOI18N
         jLabel1.setToolTipText("");
 
         jLabel2.setFont(new java.awt.Font("Tahoma", 0, 36)); // NOI18N
@@ -247,7 +225,7 @@ public class User_Interface extends javax.swing.JFrame {
                     .addContainerGap()))
         );
 
-        rotatePanel1.setImage(Toolkit.getDefaultToolkit().getImage(User_Interface.class.getResource("/images/knob2-resized.png")));
+        rotatePanel1.setImage(Toolkit.getDefaultToolkit().getImage(View.class.getResource("/images/knob2-resized.png")));
         rotatePanel1.setOpaque(false);
         rotatePanel1.rotateWithParam(270);
 
@@ -292,6 +270,11 @@ public class User_Interface extends javax.swing.JFrame {
         jMenuBar1.add(connectMenu);
 
         setJMenuBar(jMenuBar1);
+        
+        JLabel lblSyncMode = new JLabel();
+        lblSyncMode.setText("Trigger Mode");
+        lblSyncMode.setHorizontalAlignment(SwingConstants.CENTER);
+        lblSyncMode.setFont(new Font("Tahoma", Font.PLAIN, 18));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         layout.setHorizontalGroup(
@@ -306,7 +289,10 @@ public class User_Interface extends javax.swing.JFrame {
         					.addGap(0, 0, Short.MAX_VALUE))
         				.addGroup(layout.createSequentialGroup()
         					.addGap(478)
-        					.addComponent(jProgressBar1, GroupLayout.DEFAULT_SIZE, 324, Short.MAX_VALUE)))
+        					.addComponent(jProgressBar1, GroupLayout.DEFAULT_SIZE, 324, Short.MAX_VALUE))
+        				.addGroup(layout.createSequentialGroup()
+        					.addContainerGap()
+        					.addComponent(lblSyncMode, GroupLayout.PREFERRED_SIZE, 125, GroupLayout.PREFERRED_SIZE)))
         			.addContainerGap())
         );
         layout.setVerticalGroup(
@@ -314,11 +300,14 @@ public class User_Interface extends javax.swing.JFrame {
         		.addGroup(layout.createSequentialGroup()
         			.addContainerGap()
         			.addGroup(layout.createParallelGroup(Alignment.LEADING)
-        				.addComponent(jLayeredPane2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
         				.addGroup(layout.createSequentialGroup()
         					.addComponent(tempPanel, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
         					.addPreferredGap(ComponentPlacement.RELATED, 92, Short.MAX_VALUE)
-        					.addComponent(jProgressBar1, GroupLayout.PREFERRED_SIZE, 25, GroupLayout.PREFERRED_SIZE)))
+        					.addComponent(jProgressBar1, GroupLayout.PREFERRED_SIZE, 25, GroupLayout.PREFERRED_SIZE))
+        				.addGroup(layout.createSequentialGroup()
+        					.addComponent(jLayeredPane2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+        					.addPreferredGap(ComponentPlacement.RELATED)
+        					.addComponent(lblSyncMode, GroupLayout.PREFERRED_SIZE, 22, GroupLayout.PREFERRED_SIZE)))
         			.addContainerGap())
         );
         getContentPane().setLayout(layout);
@@ -329,42 +318,6 @@ public class User_Interface extends javax.swing.JFrame {
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(User_Interface.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(User_Interface.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(User_Interface.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(User_Interface.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                try {
-                    GUI = new User_Interface();
-                    GUI.setVisible(true);
-                } catch (InterruptedException ex) {
-                    Logger.getLogger(User_Interface.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        });
-    }
 
     // Variables declaration - do not modify                     
     private javax.swing.JMenu connectMenu;
@@ -392,7 +345,7 @@ public class User_Interface extends javax.swing.JFrame {
     SwingWorker<Integer, Integer> StartupLoader = new SwingWorker<Integer, Integer>() {
         @Override
         protected Integer doInBackground() throws Exception {
-            initializeSerial();
+        	//initializeComplete = initializeSerial();
             return 100;
         }
     };
@@ -409,11 +362,7 @@ public class User_Interface extends javax.swing.JFrame {
 
             @Override
             public void windowClosing(WindowEvent e) {
-            	
-                if(arduinoPort != null) {
-                	if(arduinoPort.isOpen()) arduinoPort.closePort();  //Close port connection when JFrame is closed
-                	arduinoConnect = false;
-                }
+            	serial.disconnect();
             }
 
             @Override
@@ -446,88 +395,14 @@ public class User_Interface extends javax.swing.JFrame {
         this.addWindowListener(taskStarterWindowListener);
     }
     
-    private void initializeSerial() throws InterruptedException{
-        //Generate an array of available ports on system
-        int nPorts = SerialPort.getCommPorts().length;
-        serialPorts = SerialPort.getCommPorts();
-
-
-        //Toggle each port checking for any that send an ID packet
-        group = new ButtonGroup();
-        for(int a = 0; a < nPorts; a++){
-            arduinoPort = serialPorts[a];
-            jProgressBar1.setValue(100*(a+1)/(nPorts));
-            jProgressBar1.setString("Testing " +  arduinoPort.getDescriptivePortName());
-            arduinoPort.setBaudRate(BAUDRATE);
-            arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
-            arduinoPort.openPort();
-            readSerial();
-			arduinoPort.closePort();			
-	     }
-        
-        //Add disconnect button to menu options
-        rbMenuItem = new JRadioButtonMenuItem("Disconnect"); 
-        rbMenuItem.setToolTipText("Disconnect from current device");
-        rbMenuItem.setSelected(true);
-        //Add an action listener to the radio button so it can check when clicked
-        rbMenuItem.addActionListener((ActionEvent e) -> {
-            //If a radio button is selected connect to that device
-            connectDevice();
-        });
-        group.add(rbMenuItem);
-        connectMenu.add(rbMenuItem);
-     
-        //Inform user if no devices were found
-        if(nPorts == 0) jProgressBar1.setString("No available COM ports found on this computer.");
-        else if(nArduino == 0) jProgressBar1.setString("Arduino not found.");
-        else if(nArduino == 1) jProgressBar1.setString(nArduino + " device found.");
-        else jProgressBar1.setString("Disconnected: " + nArduino + " devices available.");
-        jProgressBar1.setValue(0); //Reset progress bar
-        
-        initializeComplete = true;
+    
+    public void updateProgress(int progress, String message) {
+        jProgressBar1.setValue(progress);
+        jProgressBar1.setString(message);
     }
     
-    private void connectDevice(){
-        if(arduinoPort != null) { //Close active open port if one is open
-        	if(arduinoPort.isOpen()) arduinoPort.closePort();
-        	arduinoConnect = false;
-        }
-        
-        Iterable<AbstractButton> arl = Collections.list(group.getElements()); //Create a list of buttons in connect menu
-        for(AbstractButton ab:arl){
-            if(ab.isSelected()){
-                for(SerialPort b:serialPorts){ //Search all COM ports for on that matches radioButton (using toolTipText which contains COM port name)
-                    if(ab.getToolTipText().equals(b.getDescriptivePortName())){
-                        System.out.println(b.getDescriptivePortName() + random());
-                        arduinoPort = b;
-                        arduinoPort.setBaudRate(BAUDRATE);
-                        arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
-                        arduinoPort.openPort(); //Connect to matching port if found
-                        
-                        //Add a data listener to the port to catch any incoming packets
-                        arduinoPort.addDataListener(new SerialPortDataListener() {
-                    	   public int getListeningEvents() { return SerialPort.LISTENING_EVENT_DATA_AVAILABLE; }
-                    	   @Override
-                    	   public void serialEvent(SerialPortEvent event)
-                    	   {
-                    	      readSerial();
-                    	   }
-                        });
-                        arduinoConnect = true;
-                        jProgressBar1.setString("Connected to: " + ab.getText());
-                        break;
-                    }
-                }
-            }
-        }
-        if(!arduinoConnect) {
-            if(nArduino == 1) jProgressBar1.setString("Disconnected: " + nArduino + " device available.");
-            else jProgressBar1.setString("Disconnected: " + nArduino + " devices available.");
-            resetDisplay();
-        }
-    }
     
-    private void resetDisplay() {
+    public void resetDisplay() {
         
 		inputTempLabel.setToolTipText("-273.15");
 		outputTempLabel.setToolTipText("-273.15");
@@ -574,97 +449,41 @@ public class User_Interface extends javax.swing.JFrame {
         rotatePanel1.setToolTipText("-50");
     }
     
-    private boolean readSerial() {
-    	packetFound = false; //Reset pack found flag
-        readLength = arduinoPort.readBytes(readBuffer, readBuffer.length);
-System.out.println("Buffer: " + Arrays.toString(readBuffer));
-        
-        //If minimal packet size is received then verify contents
-		if(readLength > 4) {
-			//Search entire buffer for all valid packets
-            for(int a=0; a<(readLength-headerArray.length); a++) {
-            	if(readBuffer[a] == STARTBYTE) { //Search for startbyte
-            		//Copy putative header starting at STARTBYTE
-            		System.arraycopy(readBuffer, a, headerArray, 0, headerArray.length); 
-            	    
-            		//Extract header bytes and convert uint8_t to int (variable & 0xFF) - https://stackoverflow.com/questions/14071361/java-how-to-parse-uint8-in-java 
-            	    packetLength = headerArray[1] & 0xFF; //length of the packet
-            		packetID = headerArray[3] & 0xFF; //Packet ID
-            		checkSum = packetID; //Reset checksum value to start at packet ID
-            		
-            		//Copy putative packet starting at end of header
-            		if((a+1+headerArray.length+packetLength) < readBuffer.length && packetLength <= packetArray.length && checkSum > 0) { //Check that packet is complete before trying to copy - ignore fragmented packets at end of buffer or packets that are longer than the packetArray they will be stored in
-            			Arrays.fill(packetArray, (byte) 0); //Clear contents of packet array
-            			System.arraycopy(readBuffer, a+headerArray.length, packetArray, 0, packetLength); //Copy putative header starting at STARTBYTE
-	            		
-	            		//Extract checksum from packet and verify it against checksum in data packet
-	            		for(int b=0; b<packetLength; b++) checkSum += (packetArray[b] & 0xFF);
-System.out.println("Checksums: " + (checkSum % 256) + " " + (headerArray[2] & 0xFF));
-	            		if((checkSum % 256) == (headerArray[2] & 0xFF)) { //See if checksum matches checksum in datapacket
-	            			//If checksum is valid then valid packet structure - send packet to appropriate function based on packetID
-	            			switch (packetID) {
-	            				case IDPACKET: updateID();
-	            					break;
-	            				case TEMPPACKET: updateTemp();
-	            					break;
-	            				case PANELPACKET: updatePanel();
-	            					break;
-	            				case WAVEPACKET: updateWave();
-	            					break;
-	            			}
-	            			//Move buffer index to end of packet
-	            			a += packetLength + headerArray.length-1;
-	            		}
-            		}
-            	}
-            	if(!initializeComplete && packetFound) {
-            		break; //If device was initializing and ID packet was found, stop looking for more packets
-            	}
-            }
+    public boolean packetProcessor(byte[] packet, int ID) {
+    	this.packetArray = packet;
+    	this.packetID = ID;
+    	
+		switch (packetID) {
+			case IDPACKET: updateID();
+				return true;
+			case TEMPPACKET: updateTemp();
+				return true;
+			case PANELPACKET: updatePanel();
+				return true;
+			case WAVEPACKET: updateWave();
+				return true;
+			default: return false; // If the packet ID is invalid, return false
 		}
-		return packetFound;
     }
     
     private void updateID() {
     	//Only add to menu during initialization
-    	packetFound = true; //Set packet found flag to true
-		arduinoPort.writeBytes(CONFIRMBYTE, 1); //Send confirmation byte that ID packet was received
-    	if(!initializeComplete) {
-	    	nArduino += 1; //Add one to number of found devices
+    	if(!initializeComplete) { 		
 	    	rbMenuItem = new JRadioButtonMenuItem(new String(packetArray));
-	    	rbMenuItem.setToolTipText(arduinoPort.getDescriptivePortName());
+	    	rbMenuItem.setToolTipText(serial.getPortID());
 	        group.add(rbMenuItem);
 	        connectMenu.add(rbMenuItem);
 	        
 	    	//Add an action listener to the radio button so it can check when clicked
 	        rbMenuItem.addActionListener((ActionEvent e) -> {
 	            //If a radio button is selected connect to that device
-	            connectDevice();
+	            serial.connectDevice(group);
 	        });
     	}
     }
     
-    private void updateTemp() {
-    	//Only read packet if device is initialized
-    	if(initializeComplete) {
-    		packetFound = true; //Set packet found flag to true
-    		
-    		//Extract temperature bytes and convert to unsigned ints
-    		if(temp1 == -9999) { //If this is the first reading - simply load values
-    			temp1 = packetArray[0] & 0xFF;
-        		temp2 = packetArray[1] & 0xFF;
-        		temp3 = packetArray[2] & 0xFF;
-    		}
-    		else { //Otherwise use sliding window
-    			temp1 = (packetArray[0] & 0xFF)/TEMPWINDOW + temp1 * ((TEMPWINDOW-1)/TEMPWINDOW);
-        		temp2 = (packetArray[1] & 0xFF)/TEMPWINDOW + temp2 * ((TEMPWINDOW-1)/TEMPWINDOW);
-        		temp3 = (packetArray[2] & 0xFF)/TEMPWINDOW + temp3 * ((TEMPWINDOW-1)/TEMPWINDOW);
-    		}
-    		ADCtoCelcius(temp1, inputTempBar, inputTempLabel);
-    		ADCtoCelcius(temp2, outputTempBar, outputTempLabel);
-    		ADCtoCelcius(temp3, extTempBar, extTempLabel);
-    	}
-    }
+
+   
     private void updatePanel() {
     	//Only read packet if device is initialized
     	if(initializeComplete) {
@@ -683,31 +502,8 @@ System.out.println("Checksums: " + (checkSum % 256) + " " + (headerArray[2] & 0x
     	
     }
     
-    void ADCtoCelcius(double ADC, JProgressBar bar, JLabel label) {
-    	//If thermistor is sending valid measurement, output result
-    	double currentTemp = Double.parseDouble(label.getToolTipText());
-    	if(ADC > 2) {    	
-	    	//Math from: https://learn.adafruit.com/thermistor/using-a-thermistor
-	    	double conversion = (-4700D*ADC) / (ADC-255D);
-	    	conversion = conversion/Ro1;
-	    	conversion = Math.log(conversion);
-	    	conversion /= beta1;
-	    	conversion += 1D/(25D+273.15D);
-	    	conversion = 1D/conversion;
-	    	conversion -= 273.15D;
-	    	if(conversion > (currentTemp + TEMPJITTER) || conversion < (currentTemp - TEMPJITTER)) { //If temp has sufficiently changed - update temp
-		    	label.setToolTipText(Double.toString(conversion));
-		    	bar.setValue((int) (conversion*10D));
-		    	label.setText(Math.round(conversion) + "°C");
-	    	}
 
-    	}
-    	//If measurement is 0, thermistor is disconnected
-    	else {
-    		bar.setValue((int) 0);
-    		label.setText("N/A");
-    	}
-    }
+    
 }
 
 

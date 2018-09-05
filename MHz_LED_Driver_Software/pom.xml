@@ -38,7 +38,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>edu.berkeley.MHz_LED_Modulator_v2b.User_Interface</mainClass>
+                            <mainClass>edu.berkeley.MHz_LED_Modulator_v2b.Main_class</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
