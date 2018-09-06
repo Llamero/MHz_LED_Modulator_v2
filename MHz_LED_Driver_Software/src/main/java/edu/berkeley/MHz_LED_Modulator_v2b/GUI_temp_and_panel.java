@@ -34,7 +34,7 @@ public final class GUI_temp_and_panel extends javax.swing.JFrame {
     private double[] WARNTEMP; //Temperature at which overheat warning starts - also temp that device has to recover to before turning back on after fault - 0-input, 1-output, 2-external
     private double[] FAULTTEMP; //Temperature at which driver automatically shuts off - this is also max temp for gui thermometers - 0-input, 1-output, 2-external
 	private String[] TOGGLEPOSITIONS = new String[2]; //Stores names of toggle positions
-	private double DEFAULTANGLE; //Angle the dial should go to when disconnected
+	private int DEFAULTANGLE; //Angle the dial should go to when disconnected
 	private double DEFAULTPERCENT; //Value flags dial as N/A
 	private double[] DEFAULTTEMP; //Input temperature sensor - initialize to impossible value - 0-input, 1-output, 2-external
 
@@ -255,7 +255,7 @@ public final class GUI_temp_and_panel extends javax.swing.JFrame {
         else rotatePanel1.setImage(Toolkit.getDefaultToolkit().getImage(Main_class.class.getResource("/resources/images/knob2-resized.png")));
         
         rotatePanel1.setOpaque(false);
-        rotatePanel1.rotateWithParam((int) DEFAULTANGLE);
+        rotatePanel1.rotateWithParam(DEFAULTANGLE);
 
         javax.swing.GroupLayout rotatePanel1Layout = new javax.swing.GroupLayout(rotatePanel1);
         rotatePanel1.setLayout(rotatePanel1Layout);
@@ -477,7 +477,7 @@ System.out.println("Starting serial..."); //Perform task here. In this case, we 
         jProgressBar1.setStringPainted(true);
         
         jLabel2.setText("N/A");
-        rotatePanel1.rotateWithParam((int) DEFAULTANGLE);
+        rotatePanel1.rotateWithParam(DEFAULTANGLE);
         rotatePanel1.setToolTipText(Double.toString(DEFAULTPERCENT));
     }
 
@@ -508,7 +508,7 @@ System.out.println(serial.getPortID());
     	this.FAULTTEMP = faultTemp;
     	this.DEFAULTTEMP = defaultTemp;
     	this.TOGGLEPOSITIONS = togglePositions;
-    	this.DEFAULTANGLE = defaultAngle;
+    	this.DEFAULTANGLE = (int) defaultAngle;
     	this.DEFAULTPERCENT = DEFAULTPERCENT;
     }
 }

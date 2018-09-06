@@ -127,6 +127,7 @@ public final class Pref_and_data {
 		dialSlope = prefs.getDouble(SLOPEID, DEFAULTSLOPE);
 		dialOffset = prefs.getDouble(OFFSETID, DEFAULTOFFSET);
 		dialAngle = prefs.getDouble(ANGLEID, DEFAULTANGLE);
+		defaultAngle = prefs.getDouble(ANGLEID, DEFAULTANGLE);
 		currentPercent = DEFAULTPERCENT;
 		newPercent = DEFAULTPERCENT;
 		togglePositions[0] = prefs.get(TOGGLE0ID, TOGGLEPOSITIONS[0]);
