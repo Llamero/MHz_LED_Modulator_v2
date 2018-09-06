@@ -1,37 +1,21 @@
 package edu.berkeley.MHz_LED_Modulator_v2b;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-import com.fazecast.jSerialComm.SerialPort;
-import com.fazecast.jSerialComm.SerialPortDataListener;
-import com.fazecast.jSerialComm.SerialPortEvent;
-
+import java.awt.Font;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import static java.lang.Math.random;
 import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.AbstractButton;
+
 import javax.swing.ButtonGroup;
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
-import javax.swing.JProgressBar;
 import javax.swing.JRadioButtonMenuItem;
-import javax.swing.SwingWorker;
-import java.awt.Toolkit;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.GroupLayout;
 import javax.swing.LayoutStyle.ComponentPlacement;
-import java.awt.Font;
 import javax.swing.SwingConstants;
+import javax.swing.SwingWorker;
 
 
 /**
@@ -39,13 +23,20 @@ import javax.swing.SwingConstants;
  * @author Ben
  */
 @SuppressWarnings("serial")
-public final class View extends javax.swing.JFrame {
-	private Controller controller; //Instance of controller so events can be passed back to controller
+public final class GUI_temp_and_panel extends javax.swing.JFrame {
+	
 	
     //GUI variables
     private static final DecimalFormat df1 = new DecimalFormat("##.#");
     private ButtonGroup group; //List of buttons in Connect menu
     private JRadioButtonMenuItem rbMenuItem; //Holder for current menu item
+    private double[] MINTEMP; //Minimum temperature for GUI thermometers - 0-input, 1-output, 2-external
+    private double[] WARNTEMP; //Temperature at which overheat warning starts - also temp that device has to recover to before turning back on after fault - 0-input, 1-output, 2-external
+    private double[] FAULTTEMP; //Temperature at which driver automatically shuts off - this is also max temp for gui thermometers - 0-input, 1-output, 2-external
+	private String[] TOGGLEPOSITIONS = new String[2]; //Stores names of toggle positions
+	private double DEFAULTANGLE; //Angle the dial should go to when disconnected
+	private double DEFAULTPERCENT; //Value flags dial as N/A
+	private double[] DEFAULTTEMP; //Input temperature sensor - initialize to impossible value - 0-input, 1-output, 2-external
 
     
     //Serial variables
@@ -56,16 +47,21 @@ public final class View extends javax.swing.JFrame {
     private static final byte TEMPPACKET = 2; //Identifies packet as temperature recordings
     private static final byte PANELPACKET = 3; //Identifies packet as panel status
     private static final byte WAVEPACKET = 4; //Identifies packet as recorded analog waveform
+   
 	
+	private Serial serial; //Instance of serial port communication
+	private Pref_and_data data; //Instance of controller so events can be passed back to controller
     
-    public void setController(Controller controller) {
-    	this.controller = controller;
+    public void setModules(Serial serial, Pref_and_data data) {
+    	this.serial = serial;
+    	this.data = data;
     }
+    
     /**
      * Creates new form User_Interface
      * @throws java.lang.InterruptedException
      */
-    View() throws InterruptedException {
+    GUI_temp_and_panel() throws InterruptedException {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -79,16 +75,17 @@ public final class View extends javax.swing.JFrame {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(View.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(GUI_temp_and_panel.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(View.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(GUI_temp_and_panel.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(View.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(GUI_temp_and_panel.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(View.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(GUI_temp_and_panel.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
         initComponents(); //Initialize interface components
+        initSelfListeners(); //Setup listeners for initialization events to happen when GUI appears
     }
 
     /**
@@ -99,7 +96,7 @@ public final class View extends javax.swing.JFrame {
     
     // <editor-fold defaultstate="collapsed" desc="Generated Code">                          
     private void initComponents() {
-
+    	group = new ButtonGroup();
         tempPanel = new javax.swing.JPanel();
         outputTempBar = new javax.swing.JProgressBar();
         outputTempBar.setMaximum(1000);
@@ -121,7 +118,7 @@ public final class View extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         rotatePanel1 = new edu.berkeley.MHz_LED_Modulator_v2b.RotatePanel();
-        rotatePanel1.setToolTipText("-50");
+        rotatePanel1.setToolTipText(Double.toString(DEFAULTPERCENT));
         jProgressBar1 = new javax.swing.JProgressBar();
         jMenuBar1 = new javax.swing.JMenuBar();
         connectMenu = new javax.swing.JMenu();
@@ -258,7 +255,7 @@ public final class View extends javax.swing.JFrame {
         else rotatePanel1.setImage(Toolkit.getDefaultToolkit().getImage(Main_class.class.getResource("/resources/images/knob2-resized.png")));
         
         rotatePanel1.setOpaque(false);
-        rotatePanel1.rotateWithParam(270);
+        rotatePanel1.rotateWithParam((int) DEFAULTANGLE);
 
         javax.swing.GroupLayout rotatePanel1Layout = new javax.swing.GroupLayout(rotatePanel1);
         rotatePanel1.setLayout(rotatePanel1Layout);
@@ -378,6 +375,58 @@ public final class View extends javax.swing.JFrame {
     	this.addWindowListener(taskStarterWindowListener);   	
     }
     
+    //This method is used to avoid calling an overridable method ('addWindowListener()') from within the constructor.
+    //Code is from: https://stackoverflow.com/questions/39565472/how-to-automatically-execute-a-task-after-jframe-is-displayed-from-within-it
+    private void initSelfListeners() {
+        WindowListener taskStarterWindowListener = new WindowListener() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+System.out.println("Starting serial..."); //Perform task here. In this case, we are simulating a startup (only once) time-consuming task that would use a worker.
+        	    //Perform handshaking on background thread so as not to lock-up the GUI
+				SwingWorker<Integer, Integer> StartupLoader = new SwingWorker<Integer, Integer>() {
+	       	        protected Integer doInBackground() throws Exception {
+						initializeComplete = serial.initializeSerial();
+	      	            return 100;
+	       	        }
+				};
+				StartupLoader.execute();
+            }
+            @Override
+           public void windowClosing(WindowEvent e) {
+            	serial.disconnect();
+           }
+            @Override
+            public void windowClosed(WindowEvent e) {
+                //Do nothing...Or drink coffee...NVM; always drink coffee!
+            }
+
+            @Override
+            public void windowIconified(WindowEvent e) {
+                //Do nothing...Or do EVERYTHING!
+            }
+
+            @Override
+            public void windowDeiconified(WindowEvent e) {
+                //Do nothing...Or break the law...
+            }
+
+            @Override
+            public void windowActivated(WindowEvent e) {
+                //Do nothing...Procrastinate like me!
+            }
+
+            @Override
+            public void windowDeactivated(WindowEvent e) {
+                //Do nothing...And please don't notice I have way too much free time today...
+            }
+        };
+
+        //Here is where the magic happens! We make (a listener within) the frame start listening to the frame's own events!
+       this.addWindowListener(taskStarterWindowListener);
+   }
+    
+    
+    
     
     public void updateProgress(int progress, String message) {
         jProgressBar1.setValue(progress);
@@ -387,9 +436,9 @@ public final class View extends javax.swing.JFrame {
     
     public void resetDisplay() {
         
-		inputTempLabel.setToolTipText("-273.15");
-		outputTempLabel.setToolTipText("-273.15");
-		extTempLabel.setToolTipText("-273.15");
+		inputTempLabel.setToolTipText(Double.toString(DEFAULTTEMP[0]));
+		outputTempLabel.setToolTipText(Double.toString(DEFAULTTEMP[1]));
+		extTempLabel.setToolTipText(Double.toString(DEFAULTTEMP[2]));
 	
 		outputTempBar.setOrientation(1);
 		outputTempBar.setValue(0);
@@ -428,37 +477,40 @@ public final class View extends javax.swing.JFrame {
         jProgressBar1.setStringPainted(true);
         
         jLabel2.setText("N/A");
-        rotatePanel1.rotateWithParam(270);
-        rotatePanel1.setToolTipText("-50");
+        rotatePanel1.rotateWithParam((int) DEFAULTANGLE);
+        rotatePanel1.setToolTipText(Double.toString(DEFAULTPERCENT));
     }
-    
-
-    
-    private void updateID() {
-    	//Only add to menu during initialization
-    	if(!initializeComplete) { 		
-	    	rbMenuItem = new JRadioButtonMenuItem(new String(packetArray));
-//.	    	rbMenuItem.setToolTipText(serial.getPortID());
-	        group.add(rbMenuItem);
-	        connectMenu.add(rbMenuItem);
-	        
-	    	//Add an action listener to the radio button so it can check when clicked
-	        rbMenuItem.addActionListener((ActionEvent e) -> {
-	            //If a radio button is selected connect to that device
-//.	            serial.connectDevice(group);
-	        });
-    	}
-    }
-    
-
-   
 
     private void updateWave() {
     	
     }
     
-
+    public void addMenuItem(String ID) {
+System.out.println(ID);
+System.out.println(serial.getPortID());
+    	rbMenuItem = new JRadioButtonMenuItem(ID); 
+    	rbMenuItem.setToolTipText(serial.getPortID());    	
+        group.add(rbMenuItem);
+    	System.out.println(rbMenuItem); 
+        connectMenu.add(rbMenuItem);
+      
+        
+    	//Add an action listener to the radio button so it can check when clicked
+        rbMenuItem.addActionListener((ActionEvent e) -> {
+            //If a radio button is selected connect to that device
+            serial.connectDevice(group);
+        });
+    }
     
+    public void setConstants(double[] minTemp, double[] warnTemp, double[] faultTemp, double[] defaultTemp, String[] togglePositions, double defaultAngle, double DEFAULTPERCENT) {
+    	this.MINTEMP = minTemp;
+    	this.WARNTEMP = warnTemp;
+    	this.FAULTTEMP = faultTemp;
+    	this.DEFAULTTEMP = defaultTemp;
+    	this.TOGGLEPOSITIONS = togglePositions;
+    	this.DEFAULTANGLE = defaultAngle;
+    	this.DEFAULTPERCENT = DEFAULTPERCENT;
+    }
 }
 
 
