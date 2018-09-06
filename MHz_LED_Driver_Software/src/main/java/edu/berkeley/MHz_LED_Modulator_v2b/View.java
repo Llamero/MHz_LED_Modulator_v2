@@ -371,15 +371,7 @@ public final class View extends javax.swing.JFrame {
     private javax.swing.JPanel tempPanel;
     // End of variables declaration                   
     
-    //Code is from: https://stackoverflow.com/questions/39565472/how-to-automatically-execute-a-task-after-jframe-is-displayed-from-within-it
-    //Perform handshaking on backgorund thread so as not to lock-up the GUI
-    SwingWorker<Integer, Integer> StartupLoader = new SwingWorker<Integer, Integer>() {
-        @Override
-        protected Integer doInBackground() throws Exception {
-        	//initializeComplete = initializeSerial();
-            return 100;
-        }
-    };
+
 
     //Add frame listener for window opening, closing, etc. events
     void initSelfListeners(WindowListener taskStarterWindowListener) {

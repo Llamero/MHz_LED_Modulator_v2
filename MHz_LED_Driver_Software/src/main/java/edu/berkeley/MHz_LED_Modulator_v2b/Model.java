@@ -81,7 +81,7 @@ public final class Model {
     }
     
     public void setControllerConstants() {
-    	controller.getModelConstants(IDPACKET, TEMPPACKET, PANELPACKET, WAVEPACKET);
+    	controller.getModelConstants(IDPACKET, TEMPPACKET, PANELPACKET, WAVEPACKET, initializeComplete);
     }
 
 /////////////////////////////PREFERENCES//////////////////////////////////////////////////////////////////////////////////////////////////////////	

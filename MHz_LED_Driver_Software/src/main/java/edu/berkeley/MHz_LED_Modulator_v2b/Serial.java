@@ -48,6 +48,7 @@ public final class Serial {
     public void setController(Controller controller) {
     	this.controller = controller;
     }
+    
     public void disconnect() {
         if(arduinoPort != null) {
         	if(arduinoPort.isOpen()) arduinoPort.closePort(); 
@@ -56,7 +57,6 @@ public final class Serial {
     }
     
     public boolean initializeSerial() throws InterruptedException{
-System.out.println("Testing ");
         //Generate an array of available ports on system
         //Make instance of GUI
         int nPorts = SerialPort.getCommPorts().length;
@@ -67,7 +67,7 @@ System.out.println("Testing ");
         for(int a = 0; a < nPorts; a++){
             arduinoPort = serialPorts[a];
 System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
-//.            updateProgress(100*(a+1)/(nPorts), "Testing " +  arduinoPort.getDescriptivePortName());
+            controller.updateProgress(100*(a+1)/(nPorts), "Testing " +  arduinoPort.getDescriptivePortName());
             arduinoPort.setBaudRate(BAUDRATE);
             arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
             arduinoPort.openPort();
@@ -102,16 +102,16 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
                     	   }
                         });
                         arduinoConnect = true;
-//.                        updateProgress(0, "Connected to: " + ab.getText());
+                        controller.updateProgress(0, "Connected to: " + ab.getText());
                         break;
                     }
                 }
             }
         }
         if(!arduinoConnect) {
-//.            if(nArduino == 1) updateProgress(0, "Disconnected: " + nArduino + " device available.");
-//.            else updateProgress(0, "Disconnected: " + nArduino + " devices available.");
-//.            resetDisplay();
+            if(nArduino == 1) controller.updateProgress(0, "Disconnected: " + nArduino + " device available.");
+            else controller.updateProgress(0, "Disconnected: " + nArduino + " devices available.");
+            controller.resetDisplay();
         }
     }
     
@@ -143,7 +143,7 @@ System.out.println("Buffer: " + Arrays.toString(readBuffer));
 System.out.println("Checksums: " + (checkSum % 256) + " " + (headerArray[2] & 0xFF));
 	            		if((checkSum % 256) == (headerArray[2] & 0xFF)) { //See if checksum matches checksum in datapacket
 	            			//If checksum is valid then valid packet structure - convert packet to int array and send to GUI
-//.	            			packetFound = packetProcessor(packetArray, packetID);
+	            			packetFound = controller.packetProcessor(packetArray, packetID);
 	            			
 	            			//Move buffer index to end of packet
 	            			a += packetLength + headerArray.length-1;
