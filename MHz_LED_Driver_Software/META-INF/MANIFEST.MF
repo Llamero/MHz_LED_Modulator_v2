@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: .
+Main-Class: edu.berkeley.MHz_LED_Modulator_v2b.Main_class
+

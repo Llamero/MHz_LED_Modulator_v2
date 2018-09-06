@@ -23,7 +23,7 @@ import com.fazecast.jSerialComm.SerialPortDataListener;
 import com.fazecast.jSerialComm.SerialPortEvent;
 
 @SuppressWarnings("serial")
-public class Serial {
+public final class Serial {
 	
 	//Serial variables
 	//Packet structure is: byte(0) STARTBYTE -> byte(1) packet length -> byte(2) checksum -> byte(3) packet identifier -> byte(4-n) data packet;
@@ -38,10 +38,6 @@ public class Serial {
     private int readLength = 0; //Length of read Buffer
     private static final byte CONFIRMBYTE = 0; //Send byte to confirm receipt of packet
     private static final byte STARTBYTE = 0; //Identifies start of packet
-    private static final byte IDPACKET = 1; //Identifies packet as device identification packet
-    private static final byte TEMPPACKET = 2; //Identifies packet as temperature recordings
-    private static final byte PANELPACKET = 3; //Identifies packet as panel status
-    private static final byte WAVEPACKET = 4; //Identifies packet as recorded analog waveform
     private static final int BAUDRATE = 250000; //Baudrate of serial communication
     private boolean arduinoConnect = false; //Whether the GUI if currently connected to a driver
     private int nArduino = 0; //Number of Arduino devices found connected to computer
@@ -71,7 +67,7 @@ System.out.println("Testing ");
         for(int a = 0; a < nPorts; a++){
             arduinoPort = serialPorts[a];
 System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
-            updateProgress(100*(a+1)/(nPorts), "Testing " +  arduinoPort.getDescriptivePortName());
+//.            updateProgress(100*(a+1)/(nPorts), "Testing " +  arduinoPort.getDescriptivePortName());
             arduinoPort.setBaudRate(BAUDRATE);
             arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
             arduinoPort.openPort();
@@ -106,16 +102,16 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
                     	   }
                         });
                         arduinoConnect = true;
-                        updateProgress(0, "Connected to: " + ab.getText());
+//.                        updateProgress(0, "Connected to: " + ab.getText());
                         break;
                     }
                 }
             }
         }
         if(!arduinoConnect) {
-            if(nArduino == 1) updateProgress(0, "Disconnected: " + nArduino + " device available.");
-            else updateProgress(0, "Disconnected: " + nArduino + " devices available.");
-            resetDisplay();
+//.            if(nArduino == 1) updateProgress(0, "Disconnected: " + nArduino + " device available.");
+//.            else updateProgress(0, "Disconnected: " + nArduino + " devices available.");
+//.            resetDisplay();
         }
     }
     
@@ -147,7 +143,7 @@ System.out.println("Buffer: " + Arrays.toString(readBuffer));
 System.out.println("Checksums: " + (checkSum % 256) + " " + (headerArray[2] & 0xFF));
 	            		if((checkSum % 256) == (headerArray[2] & 0xFF)) { //See if checksum matches checksum in datapacket
 	            			//If checksum is valid then valid packet structure - convert packet to int array and send to GUI
-	            			packetFound = packetProcessor(packetArray, packetID);
+//.	            			packetFound = packetProcessor(packetArray, packetID);
 	            			
 	            			//Move buffer index to end of packet
 	            			a += packetLength + headerArray.length-1;
@@ -155,7 +151,7 @@ System.out.println("Checksums: " + (checkSum % 256) + " " + (headerArray[2] & 0x
             		}
             	}
             	if(!initializeComplete && packetFound) {
-            		replyByte(IDPACKET); //Tell Arduino that it's ID was found and to boot into loop
+//.            		replyByte(IDPACKET); //Tell Arduino that it's ID was found and to boot into loop
             		nArduino++; //Add one to the number of devices found
             		break; //If device was initializing and ID packet was found, stop looking for more packets
             	}

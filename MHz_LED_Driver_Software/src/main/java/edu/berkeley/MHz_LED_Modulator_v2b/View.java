@@ -39,7 +39,7 @@ import javax.swing.SwingConstants;
  * @author Ben
  */
 @SuppressWarnings("serial")
-public class View extends javax.swing.JFrame {
+public final class View extends javax.swing.JFrame {
 	private Controller controller; //Instance of controller so events can be passed back to controller
 	
     //GUI variables
@@ -89,7 +89,6 @@ public class View extends javax.swing.JFrame {
         }
         //</editor-fold>
         initComponents(); //Initialize interface components
-        initSelfListeners(); //Setup listeners for initialization events to happen when GUI appears
     }
 
     /**
@@ -217,7 +216,10 @@ public class View extends javax.swing.JFrame {
         jPanel3.setPreferredSize(new java.awt.Dimension(382, 382));
 
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel1.setIcon(new ImageIcon(View.class.getResource("/images/Dialscale2.png"))); // NOI18N
+        
+        //Conditional directory is necessary because Eclipse and executable JAR look in different directories for images
+        if(Main_class.class.getResource("/resources/images/Dialscale2.png") == null) jLabel1.setIcon(new ImageIcon(Main_class.class.getResource("/images/Dialscale2.png")));
+        else jLabel1.setIcon(new ImageIcon(Main_class.class.getResource("/resources/images/Dialscale2.png")));
         jLabel1.setToolTipText("");
 
         jLabel2.setFont(new java.awt.Font("Tahoma", 0, 36)); // NOI18N
@@ -249,8 +251,12 @@ public class View extends javax.swing.JFrame {
                     .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 382, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addContainerGap()))
         );
-
-        rotatePanel1.setImage(Toolkit.getDefaultToolkit().getImage(View.class.getResource("/images/knob2-resized.png")));
+        
+        //Conditional directory is necessary because Eclipse and executable JAR look in different directories for images
+        if(Main_class.class.getResource("/resources/images/knob2-resized.png") == null) 
+        	rotatePanel1.setImage(Toolkit.getDefaultToolkit().getImage(Main_class.class.getResource("/images/knob2-resized.png")));
+        else rotatePanel1.setImage(Toolkit.getDefaultToolkit().getImage(Main_class.class.getResource("/resources/images/knob2-resized.png")));
+        
         rotatePanel1.setOpaque(false);
         rotatePanel1.rotateWithParam(270);
 
@@ -375,49 +381,9 @@ public class View extends javax.swing.JFrame {
         }
     };
 
-    //This method is used to avoid calling an overridable method ('addWindowListener()') from within the constructor.
-    //Code is from: https://stackoverflow.com/questions/39565472/how-to-automatically-execute-a-task-after-jframe-is-displayed-from-within-it
-    private void initSelfListeners() {
-        WindowListener taskStarterWindowListener = new WindowListener() {
-            @Override
-            public void windowOpened(WindowEvent e) {
-                System.out.println("Performing task..."); //Perform task here. In this case, we are simulating a startup (only once) time-consuming task that would use a worker.
-                StartupLoader.execute();
-            }
-
-            @Override
-            public void windowClosing(WindowEvent e) {
-            	serial.disconnect();
-            }
-
-            @Override
-            public void windowClosed(WindowEvent e) {
-                //Do nothing...Or drink coffee...NVM; always drink coffee!
-            }
-
-            @Override
-            public void windowIconified(WindowEvent e) {
-                //Do nothing...Or do EVERYTHING!
-            }
-
-            @Override
-            public void windowDeiconified(WindowEvent e) {
-                //Do nothing...Or break the law...
-            }
-
-            @Override
-            public void windowActivated(WindowEvent e) {
-                //Do nothing...Procrastinate like me!
-            }
-
-            @Override
-            public void windowDeactivated(WindowEvent e) {
-                //Do nothing...And please don't notice I have way too much free time today...
-            }
-        };
-
-        //Here is where the magic happens! We make (a listener within) the frame start listening to the frame's own events!
-        this.addWindowListener(taskStarterWindowListener);
+    //Add frame listener for window opening, closing, etc. events
+    void initSelfListeners(WindowListener taskStarterWindowListener) {
+    	this.addWindowListener(taskStarterWindowListener);   	
     }
     
     
@@ -474,35 +440,20 @@ public class View extends javax.swing.JFrame {
         rotatePanel1.setToolTipText("-50");
     }
     
-    public boolean packetProcessor(byte[] packet, int ID) {
-    	this.packetArray = packet;
-    	this.packetID = ID;
-    	
-		switch (packetID) {
-			case IDPACKET: updateID();
-				return true;
-			case TEMPPACKET: updateTemp();
-				return true;
-			case PANELPACKET: updatePanel();
-				return true;
-			case WAVEPACKET: updateWave();
-				return true;
-			default: return false; // If the packet ID is invalid, return false
-		}
-    }
+
     
     private void updateID() {
     	//Only add to menu during initialization
     	if(!initializeComplete) { 		
 	    	rbMenuItem = new JRadioButtonMenuItem(new String(packetArray));
-	    	rbMenuItem.setToolTipText(serial.getPortID());
+//.	    	rbMenuItem.setToolTipText(serial.getPortID());
 	        group.add(rbMenuItem);
 	        connectMenu.add(rbMenuItem);
 	        
 	    	//Add an action listener to the radio button so it can check when clicked
 	        rbMenuItem.addActionListener((ActionEvent e) -> {
 	            //If a radio button is selected connect to that device
-	            serial.connectDevice(group);
+//.	            serial.connectDevice(group);
 	        });
     	}
     }

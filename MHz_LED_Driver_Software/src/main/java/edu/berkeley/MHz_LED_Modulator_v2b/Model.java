@@ -5,7 +5,7 @@ import java.util.prefs.Preferences;
 //The model class stores the current state of all data that needs to be exchanged between the GUI and the controller
 //The model also does any necessary conversions such as beta to T calculations
 //The model also saves values in default and loads those values on startup
-public class Model {
+public final class Model {
 	//Default values
 	//Panel
 	private static final double DEFAULTSLOPE = 1.7;
@@ -24,6 +24,11 @@ public class Model {
     private static final double DIALHISTORESIS = 0.5; //How much knob has to change to refresh display (in percent)
     private static final double SERIESR = 4700; //Value in ohms of resistor in series with thermistors
     private static final int ADCMIN = 2; //Minimum valid value on raw temp ADC readings - noise floor on readings that should be 0
+    //Serial
+    private static final byte IDPACKET = 1; //Identifies packet as device identification packet
+    private static final byte TEMPPACKET = 2; //Identifies packet as temperature recordings
+    private static final byte PANELPACKET = 3; //Identifies packet as panel status
+    private static final byte WAVEPACKET = 4; //Identifies packet as recorded analog waveform
     
     //Preference keys
     //Panel
@@ -72,7 +77,11 @@ public class Model {
 	}
 	
     public void setController(Controller controller) {
-    	this.controller = controller;
+    	this.controller = this.controller==null?controller:this.controller; //Only set the controller if it is null (i.e. do not overwrite controller)
+    }
+    
+    public void setControllerConstants() {
+    	controller.getModelConstants(IDPACKET, TEMPPACKET, PANELPACKET, WAVEPACKET);
     }
 
 /////////////////////////////PREFERENCES//////////////////////////////////////////////////////////////////////////////////////////////////////////	
@@ -193,7 +202,7 @@ public class Model {
     	double adcDouble = (double) (adcByte & 0xFF); //Convert unsigned byte to double
     	double conversion = INITIALTEMP; //Initialize temp to impossible value to flag if conversion was not done
     	
-    	if(adcInt > adcMin) {   //Minimum threshold for valid ADC recording  	
+    	if(adcDouble > adcMin) {   //Minimum threshold for valid ADC recording  	
 	    	//Math from: https://learn.adafruit.com/thermistor/using-a-thermistor
 	    	conversion = (-1*SERIESR*adcDouble) / (adcDouble-255D);
 	    	conversion = conversion/Ro[a];

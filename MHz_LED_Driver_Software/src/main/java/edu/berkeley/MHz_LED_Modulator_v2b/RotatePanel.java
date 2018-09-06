@@ -15,7 +15,7 @@ import java.net.URL;
 import javax.swing.*;
  
 @SuppressWarnings("serial")
-public class RotatePanel extends JPanel {
+public final class RotatePanel extends JPanel {
     private Image image;
     private double currentAngle;
  

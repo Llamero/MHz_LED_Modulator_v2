@@ -24,7 +24,7 @@ import javax.swing.SwingUtilities;
  *
  * @author Rodrigo Castro - https://gist.githubusercontent.com/roooodcastro/6325153/raw/056a17eacb58bb41170377bf153c71132f506a4a/GraphPanel
  */
-public class GraphPanel extends JPanel {
+public final class GraphPanel extends JPanel {
 
     private int width = 800;
     private int heigth = 400;
