@@ -31,21 +31,26 @@ public final class Serial {
 	private String PREFERREDPORT; //Port that program should connect to if available
 	private double[] WARNTEMP; //Temperature at which driver and GUI will warn user of overheat state - 0-input, 1-output, 2-external
 	private double[] FAULTTEMP; //Temperature at which driver will shutoff automatically - 0-input, 1-output, 2-external
+	private int READWAIT; //Time to wait for receiving entire packet
+	private int SENDWAIT; //Time to wait for sending entire packet
     
     public void setModules(GUI_temp_and_panel gui, Pref_and_data data) {
     	this.gui = gui;
     	this.data = data;
     }
     
-    public void setConstants(int baudRate, String preferredPort, double[] warnTemp, double[] faultTemp) {
+    public void setConstants(int baudRate, String preferredPort, double[] warnTemp, double[] faultTemp, int readWait, int sendWait) {
     	this.BAUDRATE = baudRate;
     	this.PREFERREDPORT = preferredPort;
     	this.WARNTEMP = warnTemp;
-    	this.FAULTTEMP = faultTemp;   	
+    	this.FAULTTEMP = faultTemp; 
+    	this.READWAIT = readWait;
+    	this.SENDWAIT = sendWait;
     }
     
     public void disconnect() {
         if(arduinoPort != null) {
+        	arduinoPort.writeBytes(new byte[] {0, 50}, 2);
         	if(arduinoPort.isOpen()) arduinoPort.closePort(); 
         	arduinoConnect = false;
         }
@@ -64,7 +69,7 @@ public final class Serial {
 System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
             gui.updateProgress(100*(a+1)/(nPorts), "Testing " +  arduinoPort.getDescriptivePortName());
             arduinoPort.setBaudRate(BAUDRATE);
-            arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
+            arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, READWAIT, SENDWAIT); //Blocking means wait the full 2000ms to catch the set number of bytes
             arduinoPort.openPort();
             readSerial();
 			arduinoPort.closePort();			
@@ -94,9 +99,10 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
                         System.out.println(b.getDescriptivePortName() + random());
                         arduinoPort = b;
                         arduinoPort.setBaudRate(BAUDRATE);
-                        arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, 2000, 2000); //Blocking means wait the full 2000ms to catch the set number of bytes
+                        arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, READWAIT, SENDWAIT); //Blocking means wait the full 2000ms to catch the set number of bytes
                         arduinoPort.openPort(); //Connect to matching port if found
-                        
+readSerial();
+reply(new byte[] {0, 100}); //Tell Arduino that it's ID was found and to boot into loop
                         //Add a data listener to the port to catch any incoming packets
                         arduinoPort.addDataListener(new SerialPortDataListener() {
                     	   public int getListeningEvents() { return SerialPort.LISTENING_EVENT_DATA_AVAILABLE; }

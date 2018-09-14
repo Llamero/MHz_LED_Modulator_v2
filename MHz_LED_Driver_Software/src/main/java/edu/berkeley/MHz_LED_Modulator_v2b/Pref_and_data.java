@@ -31,13 +31,14 @@ public final class Pref_and_data {
     private static final int ADCMIN = 2; //Minimum valid value on raw temp ADC readings - noise floor on readings that should be 0
     //Serial
     private static final int IDPACKET = 1; //Identifies packet as device identification packet
-    private static final int TEMPPACKET = 2; //Identifies packet as temperature recordings
-    private static final int PANELPACKET = 3; //Identifies packet as panel status
+    private static final int PANELPACKET = 2; //Identifies packet as panel status
+    private static final int TEMPPACKET = 3; //Identifies packet as temperature recordings
     private static final int WAVEPACKET = 4; //Identifies packet as recorded analog waveform
-    private static final byte CONFIRMBYTE = 0; //Send byte to confirm receipt of packet
     private static final byte STARTBYTE = 0; //Identifies start of packet
-    private static final int BAUDRATE = 1200; //Baud rate of serial communication
+    private static final int BAUDRATE = 250000; //Baud rate of serial communication
     private static final String PREFERREDPORT = null; //Set preferred port to null flagging that no preferred port is selected
+	private static final int READWAIT = 2000; //Time to wait for receiving entire packet
+	private static final int SENDWAIT = READWAIT; //Time to wait for sending entire packet
     
     //Preference keys
     //Panel
@@ -60,6 +61,8 @@ public final class Pref_and_data {
     //Serial
     private static final String BAUDID = "Baud rate";
     private static final String PORTID = "Preferred port";
+	private static final String READWAITID = "Read wait";
+	private static final String SENDWAITID = "Send wait"; 
     
     //Initialize variables to store model data
 	private GUI_temp_and_panel gui; //Instance of GUI so display can be updated
@@ -96,6 +99,8 @@ public final class Pref_and_data {
     private int packetID = 0; //Packet ID: 1-ID packet, 2-temperature packet, 3-panel packet, 4-waveform packet 
     private int packetLength = 0; //length of the packet
     private int checkSum = 0; //packet checksum
+	private int readWait; //Time to wait for receiving entire packet
+	private int sendWait; //Time to wait for sending entire packet
 
 	//Initialize a preferences file in the model class - this will allow user settings to be saved and loaded when program loads
 	Preferences prefs = Preferences.userNodeForPackage(edu.berkeley.MHz_LED_Modulator_v2b.Pref_and_data.class);
@@ -113,7 +118,7 @@ public final class Pref_and_data {
     
     public void shareConstants() {
     	gui.setConstants(minTemp, warnTemp, faultTemp, DEFAULTTEMP, TOGGLEPOSITIONS, defaultAngle, DEFAULTPERCENT);
-    	serial.setConstants(baudRate, preferredPort, warnTemp, faultTemp);
+    	serial.setConstants(baudRate, preferredPort, warnTemp, faultTemp, readWait, sendWait);
     }
 //    public void setControllerConstants() {
 //    	controller.getModelConstants(IDPACKET, TEMPPACKET, PANELPACKET, WAVEPACKET, initializeComplete);
@@ -150,6 +155,8 @@ public final class Pref_and_data {
 		//Serial
 		baudRate = prefs.getInt(BAUDID, BAUDRATE);
 		preferredPort = prefs.get(PORTID, PREFERREDPORT);
+		readWait = prefs.getInt(READWAITID, READWAIT);
+		sendWait = prefs.getInt(SENDWAITID, SENDWAIT);
 	}
 	
 	public void restoreDefaults() {
@@ -176,6 +183,8 @@ public final class Pref_and_data {
 		//Serial
 		prefs.putInt(BAUDID, BAUDRATE);
 		prefs.put(PORTID, PREFERREDPORT);
+		prefs.putInt(READWAITID, READWAIT);
+		prefs.putInt(SENDWAITID, SENDWAIT);
 		
 		//Re-initialize to enact default values
 		initialize();
@@ -235,7 +244,7 @@ public final class Pref_and_data {
 	    	if(!initializeComplete && packetFound) {
 				
 ////NOTE: Install handshake code here to exchange critical parameters with arduino such as fault temps, etc.+++++++++++++++++++++++++++++++++++++	    		    	
-	    		serial.reply(new byte[] {CONFIRMBYTE, headerArray[2]}); //Tell Arduino that it's ID was found and to boot into loop
+//	    		serial.reply(new byte[] {CONFIRMBYTE, headerArray[2]}); //Tell Arduino that it's ID was found and to boot into loop
 	    		nArduino++; //Add one to the number of devices found
 	    		break; //If device was initializing and ID packet was found, stop looking for more packets
 	    	}
