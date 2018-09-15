@@ -46,7 +46,8 @@ uint8_t FANMAXTEMP = WARNTEMP[0]; //LED temp above which the PWM fan runs at max
 uint8_t TRIGGER = 0; //trigger (0=toggle, 1=analog, 2=digital, 3=digital activates analog - such as shutter open then trigger off of fast mirror)
 uint8_t ANALOGSEL = 3; //(analog select (3 = diode, 4 = raw) 
 uint8_t FAULTLED = B00000100; //Alarm to alert to warning temperature (0=false, 4=true)
-uint8_t FAULTTONE = B00010000; //Alarm to alert to fault temperature (0=false, 16=true) 
+uint8_t FAULTVOLUME = 127; //Volume of alarm to alert to fault temperature (0 = min, 127 = max);
+uint8_t STARTVOLUME = 10; //Volume of short tone upon initializing (0 = min, 127 = max);
 boolean PWMFAN = 0; //Digital I/O 2 as PWM fan controller (0=N/A, 1=on)
 boolean SYNCTYPE = 0; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
 boolean DTRIGGERPOL = 0; //digital trigger polarity (0 = High, 1 = Low)
@@ -230,6 +231,8 @@ void processReceivedPackets(){
     if(packetLength >= SETUPSIZE){ //If minimum number of necessary bytes were recieved, check buffer for setup packet
       for(a=0; a<=(packetLength-SETUPSIZE); a++){ //Search for valid header in packet
         if(!rxBuffer[a] && rxBuffer[a+1] == STATUSPACKET && rxBuffer[a+2] == SETUPSIZE){ //if packet has valid status packet header - parse packet
+           rxStart = a; //Initialize rxStart to current index
+           rxIndex = a+SETUPSIZE; //Initialize rxIndex to next position after end of putative setup packet
            setupPacket();
         }
       }
@@ -238,13 +241,16 @@ void processReceivedPackets(){
   else{
     rxBuffer[rxIndex] = Serial.read(); //Otherwise, load single byte into circular buffer
     packetLength = rxIndex - rxStart;
-    if(rxIndex == rxStart && rxBuffer[rxIndex++]) rxStart = rxIndex; //If start of packet is not yet found (either leading 0x00 or rxIndex != rxStart) then move the start point one increment forward as well
+    if(rxIndex == rxStart && rxBuffer[rxIndex++]) rxStart = rxIndex; //If start of packet is not yet found (either leading 0x00 or rxIndex != rxStart) then move the start point one increment forward as well 
     else if(packetLength == COMMANDSIZE){ //If packet is proper comand length, check for valid header
-      if(rxBuffer[rxStart] == 0 && rxBuffer[rxStart+1] == rxBuffer[rxStart+4] && rxBuffer[rxStart+2] == COMMANDSIZE){ //If header is valid, parse the command
-        if(rxBuffer[rxStart+4] == DISCONNECTPACKET) driverStandby(); //If disconnect is received, stop driver until reconnect resets driver.  This keeps driver from spamming serial buffer
-        else if(rxBuffer[rxStart+4] == RESETPACKET) resetPacket(); //If reset command is received, set program line index to and reinitialize driver without hard reset
-        else if(rxBuffer[rxStart+4] == FAULTPACKET) failSafe(); //If fault command is received, enter failsafe (i.e. failsafe test).
-        else; //Invalid packet
+      if(rxBuffer[rxStart] == 0 && rxBuffer[rxStart+1] == rxBuffer[rxStart+HEADER] && rxBuffer[rxStart+2] == COMMANDSIZE && rxBuffer[rxStart+3] == rxBuffer[rxStart+HEADER]){ //If header is valid, parse the command
+        if(rxBuffer[rxStart+HEADER] == DISCONNECTPACKET) driverStandby(); //If disconnect is received, stop driver until reconnect resets driver.  This keeps driver from spamming serial buffer
+        else if(rxBuffer[rxStart+HEADER] == RESETPACKET) resetPacket(); //If reset command is received, set program line index to and reinitialize driver without hard reset
+        else if(rxBuffer[rxStart+HEADER] == FAULTPACKET){ //If fault command is received, enter failsafe (i.e. failsafe test).
+          failSafe();
+          rxStart = rxIndex; //Move start point to current index to flag that no packet is active, and start next packet search at end of current packet
+        }
+        else rxStart++; //If the packet is invalid, move the start index over by one to scan for a valid packet via a sliding window
       }
     }
   }
@@ -259,35 +265,44 @@ void driverStandby(){
 
 //Parse the setup packet and then check if valid
 void setupPacket(){
-  a += 3; //Move the index forward
+  //Confirm checksum
+  checkSum = 0;
+  for(a=rxStart+HEADER; a<rxIndex; a++){
+    checkSum += rxBuffer[a];
+  }
+  if(rxBuffer[rxStart+3] != checkSum) return; //If checksum is not valid, exit parsing function and continue searching for valid setup packet
+  
+  rxStart += HEADER; //Move the index forward to start of data
   //Use a++ as index to parse packet so that the txPacket index is automatically moved to the end of the packet since otherwise the 0 bytes within the packet can be interpreted as start indeces
-  WARNTEMP[0] = txPacket[a++]; //1:3-warn temps, warn of overheating at 60oC (60oC = 98 on 8-bit ADC)
-  WARNTEMP[1] = txPacket[a++];
-  WARNTEMP[2] = txPacket[a++];
-  FAULTTEMP[0] = txPacket[a++]; //4:6-fault temps. enter fault at 80oC (80oC = 66 on 8-bit ADC)
-  FAULTTEMP[1] = txPacket[a++];
-  FAULTTEMP[2] = txPacket[a++];
-  bytesToUint16.bValue[1] = txPacket[a++]; //Assemble uint16_t value
-  bytesToUint16.bValue[0] = txPacket[a++]; //Assemble uint16_t value
-  ONDELAY = bytesToUint16.value; //18:19-On delay
-  bytesToUint16.bValue[1] = txPacket[a++]; //Assemble uint16_t value
-  bytesToUint16.bValue[0] = txPacket[a++]; //Assemble uint16_t value
-  OFFDELAY = bytesToUint16.value; //20:21-Off delay
-  FANMINTEMP = txPacket[a++]; //8-LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
-  FANMAXTEMP = txPacket[a++]; //9-LED temp above which the PWM fan runs at maximum speed, - default to warn temp 
-  TRIGGER = txPacket[a++]; //10-trigger (0=toggle, 1=analog, 2=digital, 3=digital activates analog - such as shutter open then trigger off of fast mirror)
-  ANALOGSEL = txPacket[a++]; //17-analog select (3 = diode, 4 = raw) 
-  FAULTLED = txPacket[a++] & B00000100; //24-Alarm to alert to warning temperature (0=false, 4=true) - use bitmask for safety (protects other pins from being accidentally overwritten in the event of a bad byte)
-  FAULTTONE = txPacket[a++] & B00010000; //25-Alarm to alert to fault temperature (0=false, 16=true) - 
-  PWMFAN = txPacket[a++]; //7-Digital I/O 2 as PWM fan controller (0=N/A, 1=on)   
-  SYNCTYPE = txPacket[a++]; //11-sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
-  DTRIGGERPOL = txPacket[a++]; //12-digital trigger polarity (0 = High, 1 = Low)
-  ATRIGGERPOL = txPacket[a++]; //13-analog trigger polarity (0 = Rising, 1 = Falling)
-  LEDSOURCE = txPacket[a++]; //14-LED intensity signal source (0 = Ext source, 1 = AWG source)
-  TRIGHOLD = txPacket[a++]; //15-trigger hold (0 = single shot, 1 = repeat until trigger resets), 
-  AWGSOURCE = txPacket[a++]; //16-AWG source (0=txPacket, 1=mirror the intensity knob),             
-  SYNCOUT = txPacket[a++] & B01000000; //23-Digital I/O 2 as sync out (0=false, 64=true) - use bitmask for safety (protects other pins from being accidentally overwritten in the event of a bad byte) *************CHECK: don't use a++ as next call to for-loop will also index a forward one?**********************************
+  WARNTEMP[0] = rxBuffer[rxStart++]; //warn temps, warn of overheating at 60oC (60oC = 98 on 8-bit ADC)
+  WARNTEMP[1] = rxBuffer[rxStart++];
+  WARNTEMP[2] = rxBuffer[rxStart++];
+  FAULTTEMP[0] = rxBuffer[rxStart++]; //fault temps. enter fault at 80oC (80oC = 66 on 8-bit ADC)
+  FAULTTEMP[1] = rxBuffer[rxStart++];
+  FAULTTEMP[2] = rxBuffer[rxStart++];
+  bytesToUint16.bValue[1] = rxBuffer[rxStart++]; //Assemble uint16_t value
+  bytesToUint16.bValue[0] = rxBuffer[rxStart++]; //Assemble uint16_t value
+  ONDELAY = bytesToUint16.value; //On delay
+  bytesToUint16.bValue[1] = rxBuffer[rxStart++]; //Assemble uint16_t value
+  bytesToUint16.bValue[0] = rxBuffer[rxStart++]; //Assemble uint16_t value
+  OFFDELAY = bytesToUint16.value; //Off delay
+  FANMINTEMP = rxBuffer[rxStart++]; //LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
+  FANMAXTEMP = rxBuffer[rxStart++]; //LED temp above which the PWM fan runs at maximum speed, - default to warn temp 
+  TRIGGER = rxBuffer[rxStart++]; //trigger (0=toggle, 1=analog, 2=digital, 3=digital activates analog - such as shutter open then trigger off of fast mirror)
+  ANALOGSEL = rxBuffer[rxStart++]; //analog select (3 = diode, 4 = raw) 
+  FAULTLED = rxBuffer[rxStart++] & B00000100; //Alarm to alert to warning temperature (0=false, 4=true) - use bitmask for safety (protects other pins from being accidentally overwritten in the event of a bad byte)
+  FAULTVOLUME = rxBuffer[rxStart++]; //Alarm to alert to fault temperature
+  STARTVOLUME = rxBuffer[rxStart++]; //Volume of short tone upon initializing
+  PWMFAN = rxBuffer[rxStart++]; //Digital I/O 2 as PWM fan controller (0=N/A, 1=on)   
+  SYNCTYPE = rxBuffer[rxStart++]; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
+  DTRIGGERPOL = rxBuffer[rxStart++]; //digital trigger polarity (0 = High, 1 = Low)
+  ATRIGGERPOL = rxBuffer[rxStart++]; //analog trigger polarity (0 = Rising, 1 = Falling)
+  LEDSOURCE = rxBuffer[rxStart++]; //LED intensity signal source (0 = Ext source, 1 = AWG source)
+  TRIGHOLD = rxBuffer[rxStart++]; //trigger hold (0 = single shot, 1 = repeat until trigger resets), 
+  AWGSOURCE = rxBuffer[rxStart++]; //AWG source (0=txPacket, 1=mirror the intensity knob),             
+  SYNCOUT = rxBuffer[rxStart++] & B01000000; //Digital I/O 2 as sync out (0=false, 64=true) - use bitmask for safety (protects other pins from being accidentally overwritten in the event of a bad byte) *************CHECK: don't use a++ as next call to for-loop will also index a forward one?**********************************
 
+  //Check that setup values are valid
   checkSetup();
 }
 
@@ -297,8 +312,8 @@ void checkSetup(){
     if(WARNTEMP[a] >= FAULTTEMP[a] || WARNTEMP[a] > 245 || FAULTTEMP[a] > 245 || WARNTEMP < 10 || FAULTTEMP < 10) return; //Setup is not valid if set temps are at the edge of the ADC range (roughly <-25oC or >180oC for standard thermistors)
   }
   //Check that packet values are valid
-  if(FANMAXTEMP > FANMINTEMP && TRIGGER < 4 && (ANALOGSEL-3) < 2){ //Check numerical values for validity
-    if((!FAULTLED || FAULTLED == 4) && (!FAULTTONE|| FAULTTONE == 16)){ //Check pin ID variables
+  if(FANMAXTEMP > FANMINTEMP && TRIGGER < 4 && (ANALOGSEL-3) < 2 && FAULTVOLUME < 128 && STARTVOLUME < 128){ //Check numerical values for validity
+    if((!FAULTLED || FAULTLED == 4)){ //Check pin ID variables
       if(PWMFAN < 2 && SYNCTYPE < 2 && DTRIGGERPOL < 2 && ATRIGGERPOL < 2 && LEDSOURCE < 2 && TRIGHOLD < 2 && AWGSOURCE < 2 && SYNCOUT < 2){ //Check boolean variables
         //If setup is valid, then initialization is successful
         initialized = true;
@@ -307,10 +322,10 @@ void checkSetup(){
         PORTB |= FAULTLED; //Turn on warning LED
         for(a=0; a<500; a++){ //Generate tone for 0.1 seconds
           taskIndex++;  
-          PORTB |= FAULTTONE;
-          delayMicroseconds(132);
+          PORTB |= B00010000;
+          delayMicroseconds(STARTVOLUME);
           PORTB &= B11101111;
-          delayMicroseconds(132);
+          delayMicroseconds(255-STARTVOLUME);
         }
         delay(500); //Wait for reset from GUI in case setup packet does not match
         PORTB &= B11111011; //Turn off warning LED
@@ -322,16 +337,18 @@ void checkSetup(){
 
 //In the event of the driver or LED overheating, fail safe automatically turns off the LED circuit until the driver/LED both cool to a safe temperature
 void failSafe(){
+  uint8_t TIMSK0state = TIMSK0;
+  TIMSK0 &= ~_BV(OCIE0A); //Turn off interrupts - loop calls check status directly to monitor temp
   boolean fault = true;
   uint8_t PORTDstate = PORTD; //Record current state of ports so they can be restored after fault
   uint8_t PORTBstate = PORTB;
-  uint8_t TIMSK0state = TIMSK0;
+  
   
   //If fault temp is reached, enter failsafe mode until warn temp is reached
   PORTD |= B00011000; //Set analog swich to negative voltage output - this will force the LED off (due to rail offset - grounding the LED would still leave LED with low current)
   PORTB &= B11111101; //Turn off 5V input to digital pot
   SPI.end(); //End SPI so that locks on warning LED and buzzer are released
-  TIMSK0 |= _BV(OCIE0A); //Turn on interrupts to begin monitoring the device - needed to continue monitoring temperature during 
+  
     
   while(fault){ //Stay in fault mode until all thermistors are recording below the warning temp
     PORTB |= FAULTLED; //Turn on warning LED
@@ -340,11 +357,12 @@ void failSafe(){
     Serial.write(txPacket, COMMANDSIZE); //Send assembled data packet to computer
        
     for(a=0; a<3789; a++){ //Generate tone for 0.5 seconds
-      taskIndex++;  
-      PORTB |= FAULTTONE;
-      delayMicroseconds(132);
+      taskIndex++; 
+      checkStatus(); 
+      PORTB |= B00010000;
+      delayMicroseconds(FAULTVOLUME);
       PORTB &= B11101111;
-      delayMicroseconds(132);
+      delayMicroseconds(255-FAULTVOLUME);
     }
     PORTB &= B11111011; //Turn off warning LED
     delay(500); //Wait for 0.5 seconds
@@ -356,7 +374,21 @@ void failSafe(){
   PORTD = PORTDstate;
   TIMSK0 = TIMSK0state; //Restore Timer0 interrupt settings
   taskIndex = 0; //Reset the task index
+}
 
+uint8_t adjustVolume(){//--------------------------------------------------------------------------------------------------------------FINISH INSTALLING THIS SO VOLUME CAN BE ADJUSTED USING KNOB ON PANEL----------------------------------------------------
+  uint8_t volume = 0;
+  PORTB |= B00000100; //Turn on warning LED
+  for(a=0; a<3100; a++){ //Generate tone for 0.1 seconds
+    PORTB |= B00010000;
+    delayMicroseconds(volume);
+    PORTB &= B11101111;
+    delayMicroseconds(255-volume);
+  }
+  volume = (analogRead(5) >> 3);
+  PORTB &= B11111011; //Turn off warning LED
+  delay(500); //Wait for reset from GUI in case setup packet does not match
+  return volume;
 }
 
 void packetError(){
