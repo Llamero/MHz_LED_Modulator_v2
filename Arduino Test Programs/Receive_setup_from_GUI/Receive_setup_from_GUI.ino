@@ -70,6 +70,7 @@ uint8_t taskIndex = 0; //Index for recording current position in background task
 int a = 0; //Dummy int counter
 uint8_t counter = 0; //Dummy 8-bit counter
 boolean syncStatus = false; //Flag for tracking if actively triggering LED or in standby
+boolean toggleSwitch = false; //FLag for tracking position of toggle switch
 
 //PORT D: USB, Switches, Digital I/O
 //0 - USB RX
@@ -138,15 +139,14 @@ void checkStatus(){
     txPacket[HEADER + taskIndex++] = syncStatus;
     txPacket[HEADER + taskIndex++] = PIND & B00000100;
     if(txPacket[4] > FAULTTEMP[0] && txPacket[5] > FAULTTEMP[1] && txPacket[6] > FAULTTEMP[2]) failSafe(); //Check whether device is overheating and enter failsafe if it is
+    if(!txPacket[5]){
+      syncStatus = false; //If toggle switch is in manual, sync status is false. -------------------------------------------------------------------------------------------------------------------ADD 
+      toggleSwitch = false; //Flag for tracking position of toggle switch
+    }
     buildPacket(STATUSPACKET, STATUSPACKET);
   }
  else{ //Check for received serial packet
-  if (Serial.available()){
-    processReceivedPackets(); //Read packet if data is available
-  }
-  else{
-    delayMicroseconds(3);
-  }
+  if (Serial.available()) processReceivedPackets(); //Read packet if data is available
  }
  if(SYNCTYPE) noInterrupts(); //Turn interrupts back off if in confocal mode - removes 5us jitter in sync timing
 }

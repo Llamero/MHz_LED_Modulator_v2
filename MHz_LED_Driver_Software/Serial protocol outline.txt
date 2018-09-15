@@ -1,0 +1,12 @@
+Always send preference package if ID packet is received
+
+Add option to skip initialization if Arduino is to be used without GUI
+
+Start up sequence:
+1) Opening COM port resets Arduino
+2) Arduino will attempt initialization sequence at most 4 times (number of repeats set by 'NINITIALIZE') until there is a successful initialization
+	a) Arduino sends ID packet every 4 seconds, followed by 3 flashes of overheat LED
+	b) The GUI parses the ID packet and sends a 0x00 byte to flag that the packet was received
+	c) The Arduino then waits for the initialization packet from the GUI (duration of wait in milliseconds set by 'TIMEOUT')
+
+	

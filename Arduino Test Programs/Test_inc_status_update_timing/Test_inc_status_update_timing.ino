@@ -148,15 +148,12 @@ void checkStatus(){
     txPacket[HEADER + taskIndex++] = syncStatus;
     txPacket[HEADER + taskIndex++] = PIND & B00000100;
     if(txPacket[4] > FAULTTEMP[0] && txPacket[5] > FAULTTEMP[1] && txPacket[6] > FAULTTEMP[2]) failSafe(); //Check whether device is overheating and enter failsafe if it is
+    if(!txPacket[5]) syncStatus = false; //If toggle switch is in manual, sync status is false.
     buildPacket(STATUSPACKET, STATUSPACKET);
   }
  else{ //Check for received serial packet
-  if (Serial.available()){
-    processReceivedPackets(); //Read packet if data is available
-  }
-  else{
-    delayMicroseconds(3);
-  }
+  if (Serial.available()) processReceivedPackets(); //Read packet if data is available
+  if(taskIndex == 20) taskIndex = 0;
  }
  if(SYNCTYPE) noInterrupts(); //Turn interrupts back off if in confocal mode - removes 5us jitter in sync timing
 }
