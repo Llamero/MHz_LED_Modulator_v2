@@ -6,7 +6,15 @@ Start up sequence:
 1) Opening COM port resets Arduino
 2) Arduino will attempt initialization sequence at most 4 times (number of repeats set by 'NINITIALIZE') until there is a successful initialization
 	a) Arduino sends ID packet every 4 seconds, followed by 3 flashes of overheat LED
-	b) The GUI parses the ID packet and sends a 0x00 byte to flag that the packet was received
-	c) The Arduino then waits for the initialization packet from the GUI (duration of wait in milliseconds set by 'TIMEOUT')
+	b) The GUI parses the ID packet and sends a 0x00 byte to flag that the packet was received and then sends the setup packet containing all setup variables (see Setup Packet)
+	c) The Arduino then waits for the setup packet from the GUI (duration of wait in milliseconds set by 'TIMEOUT')
+	d) The Arduino parses the packet and checks if the values are valid.
+		-If the default values were used (4 failed attempts to connect to GUI) the driver will check the validity of the defaul values instead
+	e) If the setup values are valid, the Arduino will enter into the configuration set by the setup values, otherwise it will stay locked in the setup loop to protect the driver and LED.
+	f) The Arduino then returns the setup packet to the GUI so it too can make sure the correct values were sent (if not, the GUI will reset the Arduino and start over)
+	g) The Arduino will then 
+
+
+
 
 	

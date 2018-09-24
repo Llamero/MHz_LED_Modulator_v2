@@ -12,6 +12,7 @@ import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
+import javax.swing.JProgressBar;
 import javax.swing.JRadioButtonMenuItem;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
@@ -426,52 +427,36 @@ System.out.println("Starting serial..."); //Perform task here. In this case, we 
    }
     
     
-    
-    
     public void updateProgress(int progress, String message) {
         jProgressBar1.setValue(progress);
         jProgressBar1.setString(message);
     }
     
     
-    public void resetDisplay() {
-        
-		inputTempLabel.setToolTipText(Double.toString(DEFAULTTEMP[0]));
-		outputTempLabel.setToolTipText(Double.toString(DEFAULTTEMP[1]));
-		extTempLabel.setToolTipText(Double.toString(DEFAULTTEMP[2]));
-	
-		outputTempBar.setOrientation(1);
-		outputTempBar.setValue(0);
-
-        outputBarLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
-        outputBarLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        outputBarLabel.setText("Output");
-
-        inputBarLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
-        inputBarLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        inputBarLabel.setText("Input");
-
-        inputTempBar.setOrientation(1);
-        inputTempBar.setValue(0);
-
-        inputTempLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
-        inputTempLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        inputTempLabel.setText("N/A");
-
-        outputTempLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
-        outputTempLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        outputTempLabel.setText("N/A");
-
-        extTempBar.setOrientation(1);
-        extTempBar.setValue(0);
-
-        extTempLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
-        extTempLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        extTempLabel.setText("N/A");
-
-        ledBarLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
-        ledBarLabel.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        ledBarLabel.setText("LED");
+    public void resetDisplay() {  
+    	JLabel label = null;
+    	JProgressBar bar = null;
+    	
+    	for(int a=0; a<3; a++) {
+    		switch (a) {
+    			case 0: 
+    				label = inputTempLabel;
+    				bar = inputTempBar;
+    				break;
+    			case 1:
+    				label = outputTempLabel;
+    				bar = outputTempBar;
+    				break;
+    			case 2:
+    				label = extTempLabel;
+    				bar = extTempBar;
+    				break;
+    		}
+    		label.setToolTipText(Double.toString(DEFAULTTEMP[a]));
+    		label.setText("N/A");
+    		bar.setOrientation(1);
+    		bar.setValue(0);
+    	}
 
         jProgressBar1.setValue(0);
         jProgressBar1.setStringPainted(true);
@@ -481,6 +466,46 @@ System.out.println("Starting serial..."); //Perform task here. In this case, we 
         rotatePanel1.setToolTipText(Double.toString(DEFAULTPERCENT));
     }
 
+    //Update the display status, including temperature, panel, etc.
+    public void updateStatus(double[] temp, double knobPercent, int knobAngle, boolean sync, boolean toggle) {
+    	JLabel label = null;
+    	JProgressBar bar = null;
+    	
+    	//Update temperature status
+    	for(int a=0; a<3; a++) {
+    		switch (a) {
+    			case 0: 
+    				label = inputTempLabel;
+    				bar = inputTempBar;
+    				break;
+    			case 1:
+    				label = outputTempLabel;
+    				bar = outputTempBar;
+    				break;
+    			case 2:
+    				label = extTempLabel;
+    				bar = extTempBar;
+    				break;
+    		}
+    		label.setToolTipText(Double.toString(temp[a]));
+    		if(temp[a] >= MINTEMP[a]) {
+        		label.setText(df1.format(temp[a]));
+        		bar.setValue((int) Math.round(temp[a]));
+    		}
+    		else {
+        		label.setText("N/A");
+        		bar.setValue(0);
+    		}
+    	}
+    	
+    	//Update knob
+        jLabel2.setText(df1.format(knobPercent));
+        rotatePanel1.rotateWithParam(knobAngle);
+        rotatePanel1.setToolTipText(Double.toString(knobPercent));
+    	
+    	
+    }
+    
     private void updateWave() {
     	
     }

@@ -32,7 +32,7 @@ const uint8_t DISCONNECTPACKET = 12; //Identifies packet commanding driver to re
 const uint8_t HEADER = 4; //Indentifies length of header
 const uint8_t WAVEPACKET = 250+HEADER; //Identifies packet as recorded analog waveform - also is number of bytes in packet
 const uint8_t IDSIZE = sizeof(IDARRAY) + HEADER; //Size of ID packet
-const uint8_t SETUPSIZE = 24+HEADER; //Expected size of recieved setup packet, see byte order below:
+const uint8_t SETUPSIZE = 25+HEADER; //Expected size of recieved setup packet, see byte order below:
 const uint8_t COMMANDSIZE = 1+HEADER; //Commands are just one byte in length after the header
 const uint8_t NINITIALIZE = 4; //Number of times to try connecting to GUI until instead booting using default settings
 

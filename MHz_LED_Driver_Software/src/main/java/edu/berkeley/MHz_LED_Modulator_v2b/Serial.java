@@ -20,7 +20,7 @@ public final class Serial {
 	private SerialPort arduinoPort; //Port object for communication to the Arduino via JSerialComm
     private SerialPort[] serialPorts; //Array of COM port objects that are currently open
     private byte[] readBuffer = new byte[1024]; //Array for storing the read buffer that can contain at least one packet (max size 256 bytes);
-    private int readLength = 0; //Length of read Buffer
+    private int readLength = 0; //Number of bytes in most recent load of rx serial buffer
     private boolean arduinoConnect = false; //Whether the GUI if currently connected to a driver
     private int nArduino = 0; //Number of Arduino devices found connected to computer
     private boolean initializeComplete = false; //Identifies if initial startup was complete (prevents things like IDs to be rewritten in connection menu)
@@ -31,21 +31,24 @@ public final class Serial {
 	private String PREFERREDPORT; //Port that program should connect to if available
 	private double[] WARNTEMP; //Temperature at which driver and GUI will warn user of overheat state - 0-input, 1-output, 2-external
 	private double[] FAULTTEMP; //Temperature at which driver will shutoff automatically - 0-input, 1-output, 2-external
-	private int READWAIT; //Time to wait for receiving entire packet
-	private int SENDWAIT; //Time to wait for sending entire packet
+	private int INITIALREADWAIT; //Time to wait for receiving entire packet during initialization
+	private int INITIALSENDWAIT; //Time to wait for sending entire packet during initialization
+
+	private int HEADERLENGTH; //Number of bytes in packet header
     
     public void setModules(GUI_temp_and_panel gui, Pref_and_data data) {
     	this.gui = gui;
     	this.data = data;
     }
     
-    public void setConstants(int baudRate, String preferredPort, double[] warnTemp, double[] faultTemp, int readWait, int sendWait) {
+    public void setConstants(int baudRate, String preferredPort, double[] warnTemp, double[] faultTemp, int initialReadWait, int initialSendWait, int headerLength) {
     	this.BAUDRATE = baudRate;
     	this.PREFERREDPORT = preferredPort;
     	this.WARNTEMP = warnTemp;
     	this.FAULTTEMP = faultTemp; 
-    	this.READWAIT = readWait;
-    	this.SENDWAIT = sendWait;
+    	this.INITIALREADWAIT = initialReadWait;
+    	this.INITIALSENDWAIT = initialSendWait;
+    	this.HEADERLENGTH = headerLength;
     }
     
     public void disconnect() {
@@ -69,12 +72,12 @@ public final class Serial {
 System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
             gui.updateProgress(100*(a+1)/(nPorts), "Testing " +  arduinoPort.getDescriptivePortName());
             arduinoPort.setBaudRate(BAUDRATE);
-            arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, READWAIT, SENDWAIT); //Blocking means wait the full 2000ms to catch the set number of bytes
+            arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, INITIALREADWAIT, INITIALSENDWAIT); //Blocking means wait the full 2000ms to catch the set number of bytes
             arduinoPort.openPort();
             readSerial();
 			arduinoPort.closePort();			
 	    }
-        
+      
         //Add disconnect option to connect menu
         gui.addMenuItem("Disconnect");
         
@@ -85,7 +88,8 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
         else if(nArduino == 1) gui.updateProgress(0, "Disconnected: " + nArduino + " device found.");
         else gui.updateProgress(0, "Disconnected: " + nArduino + " devices available.");
         
-        return true;
+        data.initializeFinished(); //Inform the model that the initialization is complete
+        return true; //Inform the GUI that the initialization is complete
     }
     
     public void connectDevice(ButtonGroup group){
@@ -99,10 +103,10 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
                         System.out.println(b.getDescriptivePortName() + random());
                         arduinoPort = b;
                         arduinoPort.setBaudRate(BAUDRATE);
-                        arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, READWAIT, SENDWAIT); //Blocking means wait the full 2000ms to catch the set number of bytes
+                        arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, INITIALREADWAIT, INITIALSENDWAIT); //Blocking means wait the full 2000ms to catch the set number of bytes
                         arduinoPort.openPort(); //Connect to matching port if found
-readSerial();
-reply(new byte[] {0, 100}); //Tell Arduino that it's ID was found and to boot into loop
+                        arduinoConnect = readSerial(); //Perform handshake and send prefs to Arduino since it will have reset
+                        
                         //Add a data listener to the port to catch any incoming packets
                         arduinoPort.addDataListener(new SerialPortDataListener() {
                     	   public int getListeningEvents() { return SerialPort.LISTENING_EVENT_DATA_AVAILABLE; }
@@ -113,7 +117,6 @@ reply(new byte[] {0, 100}); //Tell Arduino that it's ID was found and to boot in
 
                     	   }
                         });
-                        arduinoConnect = true;
                         gui.updateProgress(0, "Connected to: " + ab.getText());
                         break;
                     }
@@ -127,12 +130,13 @@ reply(new byte[] {0, 100}); //Tell Arduino that it's ID was found and to boot in
         }
     }
     
+    //Read serial data and load it into a circular buffer
     private boolean readSerial(){
     	packetFound = false; //Reset pack found flag
         readLength = arduinoPort.readBytes(readBuffer, readBuffer.length);
 System.out.println("Buffer: " + Arrays.toString(readBuffer));
         //If minimal packet size is received then verify contents
-		if(readLength > 4) {
+		if(readLength > HEADERLENGTH) {
 			packetFound = data.parseSerial(readBuffer, readLength);			
 		}
 		return packetFound;
@@ -145,9 +149,14 @@ System.out.println("Buffer: " + Arrays.toString(readBuffer));
     }
     
     public String getPortID() {
-    	String ID = arduinoPort.getDescriptivePortName();
+    	String ID = null;
+    	if(arduinoPort != null) ID = arduinoPort.getDescriptivePortName(); //Only get ID if available, otherwise function hangs
     	if(ID == null) ID = "Disconnect Device";
     	return ID;
+    }
+    
+    public void setSerialDelay(int read, int write){
+    	arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, read, write);
     }
 }
 

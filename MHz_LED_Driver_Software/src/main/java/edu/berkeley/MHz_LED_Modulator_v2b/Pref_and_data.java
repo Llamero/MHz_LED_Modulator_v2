@@ -30,15 +30,20 @@ public final class Pref_and_data {
     private static final double SERIESR = 4700; //Value in ohms of resistor in series with thermistors
     private static final int ADCMIN = 2; //Minimum valid value on raw temp ADC readings - noise floor on readings that should be 0
     //Serial
-    private static final int IDPACKET = 1; //Identifies packet as device identification packet
-    private static final int PANELPACKET = 2; //Identifies packet as panel status
-    private static final int TEMPPACKET = 3; //Identifies packet as temperature recordings
-    private static final int WAVEPACKET = 4; //Identifies packet as recorded analog waveform
     private static final byte STARTBYTE = 0; //Identifies start of packet
     private static final int BAUDRATE = 250000; //Baud rate of serial communication
     private static final String PREFERREDPORT = null; //Set preferred port to null flagging that no preferred port is selected
-	private static final int READWAIT = 2000; //Time to wait for receiving entire packet
-	private static final int SENDWAIT = READWAIT; //Time to wait for sending entire packet
+	private static final int INITIALREADWAIT = 2000; //Time to wait for receiving entire packet during initialization
+	private static final int INITIALSENDWAIT = INITIALREADWAIT; //Time to wait for sending entire packet during initialization
+	private static final int RUNREADWAIT = 200; //Update rate when GUI is running
+	private static final int RUNSENDWAIT = RUNREADWAIT; //Time to wait for sending entire packet
+	private static final int HEADERLENGTH = 4; //Number of bytes in header of serial packet
+    private static final int IDPACKET = 1; //Identifies packet as device identification packet
+    private static final int STATUSPACKET = 6; //Identifies packet as driver status (temp, panel)
+    private static final int FAULTPACKET = 10; //Identifies packet as command that driver is in fault, or to command driver to enter fault (i.e. fault test)
+    private static final int RESETPACKET = 11; //Command to driver to move to first line of code (address 0) - soft restart
+    private static final int DISCONNECTPACKET = 12; //Command to driver to enter disconnect status
+    private static final int WAVEPACKET = HEADERLENGTH + 250; //Identifies packet as recorded analog waveform
     
     //Preference keys
     //Panel
@@ -61,8 +66,10 @@ public final class Pref_and_data {
     //Serial
     private static final String BAUDID = "Baud rate";
     private static final String PORTID = "Preferred port";
-	private static final String READWAITID = "Read wait";
-	private static final String SENDWAITID = "Send wait"; 
+	private static final String INITIALREADWAITID = "Initial read wait";
+	private static final String INITIALSENDWAITID = "Initial send wait"; 
+	private static final String RUNREADWAITID = "Run read wait";
+	private static final String RUNSENDWAITID = "Run send wait"; 
     
     //Initialize variables to store model data
 	private GUI_temp_and_panel gui; //Instance of GUI so display can be updated
@@ -94,13 +101,19 @@ public final class Pref_and_data {
     private int baudRate; //Baud rate of serial communication
     private String preferredPort; //String containing name of preferred port (not port object itself)
     private int nArduino = 0; //Number of driver devices connected to the computer
-    private byte[] headerArray = new byte [4]; //Array for storing the header on a found data packet
     private byte[] packetArray = new byte[252]; //Array for storing the data packet contents (256 bytes - 4 byte header)
     private int packetID = 0; //Packet ID: 1-ID packet, 2-temperature packet, 3-panel packet, 4-waveform packet 
     private int packetLength = 0; //length of the packet
     private int checkSum = 0; //packet checksum
-	private int readWait; //Time to wait for receiving entire packet
-	private int sendWait; //Time to wait for sending entire packet
+	private int initialReadWait; //Time to wait for receiving entire packet during initialization
+	private int initialSendWait; //Time to wait for sending entire packet during initialization
+	private int runReadWait; //Update rate while GUI is running
+	private int runSendWait; //Time to wait for sending entire packet
+	private int rxStart = 0; //Index for start of packet in rx buffer
+	private int rxIndex = 0; //Current position 
+	private int rxEnd = 0; //Index for placing next received byte in the rx circular buffer
+	private byte[] rxBuffer = new byte[1024]; //Circular buffer for storing the rx serial stream
+	
 
 	//Initialize a preferences file in the model class - this will allow user settings to be saved and loaded when program loads
 	Preferences prefs = Preferences.userNodeForPackage(edu.berkeley.MHz_LED_Modulator_v2b.Pref_and_data.class);
@@ -118,7 +131,7 @@ public final class Pref_and_data {
     
     public void shareConstants() {
     	gui.setConstants(minTemp, warnTemp, faultTemp, DEFAULTTEMP, TOGGLEPOSITIONS, defaultAngle, DEFAULTPERCENT);
-    	serial.setConstants(baudRate, preferredPort, warnTemp, faultTemp, readWait, sendWait);
+    	serial.setConstants(baudRate, preferredPort, warnTemp, faultTemp, initialReadWait, initialSendWait, HEADERLENGTH);
     }
 //    public void setControllerConstants() {
 //    	controller.getModelConstants(IDPACKET, TEMPPACKET, PANELPACKET, WAVEPACKET, initializeComplete);
@@ -155,8 +168,10 @@ public final class Pref_and_data {
 		//Serial
 		baudRate = prefs.getInt(BAUDID, BAUDRATE);
 		preferredPort = prefs.get(PORTID, PREFERREDPORT);
-		readWait = prefs.getInt(READWAITID, READWAIT);
-		sendWait = prefs.getInt(SENDWAITID, SENDWAIT);
+		initialReadWait = prefs.getInt(INITIALREADWAITID, INITIALREADWAIT);
+		initialSendWait = prefs.getInt(INITIALSENDWAITID, INITIALSENDWAIT);
+		runReadWait = prefs.getInt(RUNREADWAITID, RUNREADWAIT);
+		runSendWait = prefs.getInt(RUNSENDWAITID, RUNSENDWAIT);
 	}
 	
 	public void restoreDefaults() {
@@ -183,8 +198,10 @@ public final class Pref_and_data {
 		//Serial
 		prefs.putInt(BAUDID, BAUDRATE);
 		prefs.put(PORTID, PREFERREDPORT);
-		prefs.putInt(READWAITID, READWAIT);
-		prefs.putInt(SENDWAITID, SENDWAIT);
+		prefs.putInt(INITIALREADWAITID, INITIALREADWAIT);
+		prefs.putInt(INITIALSENDWAITID, INITIALSENDWAIT);
+		prefs.putInt(RUNREADWAITID, RUNREADWAIT);
+		prefs.putInt(RUNSENDWAITID, RUNSENDWAIT);
 		
 		//Re-initialize to enact default values
 		initialize();
@@ -212,31 +229,40 @@ public final class Pref_and_data {
 ///////////////////////////////////////SERIAL//////////////////////////////////////////////////////////////////////////////////////////////////	
 	public boolean parseSerial(byte[] readBuffer, int readLength) {
 		boolean packetFound = false;
+		int a = 0;
+		int b = 0;
+		
+		//Load most recent stream into the rxBuffer
+		for(a = 0; a<readLength; a++) {
+			rxBuffer[rxIndex++] = readBuffer[a];
+			rxIndex %= rxBuffer.length; //If end of buffer is reached loop to beginning
+		}
+		
 		//Search entire buffer for all valid packets
-	    for(int a=0; a<(readLength-headerArray.length); a++) {
-	    	if(readBuffer[a] == STARTBYTE) { //Search for startbyte
-	    		//Copy putative header starting at STARTBYTE
-	    		System.arraycopy(readBuffer, a, headerArray, 0, headerArray.length); 
-	    	    
+	    for(a = rxStart; a != rxIndex; a=(a+1)%rxBuffer.length) {
+	    	
+	    	if(rxBuffer[a] == STARTBYTE && (rxIndex - a)%rxBuffer.length > HEADERLENGTH + 1) { //Search for startbyte and check that there is sufficient data left in buffer for a packet
 	    		//Extract header bytes and convert uint8_t to int (variable & 0xFF) - https://stackoverflow.com/questions/14071361/java-how-to-parse-uint8-in-java 
-	    	    packetLength = headerArray[1] & 0xFF; //length of the packet
-	    		packetID = headerArray[3] & 0xFF; //Packet ID
-	    		checkSum = packetID; //Reset checksum value to start at packet ID
+	    		packetID = rxBuffer[(a+1)%rxBuffer.length] & 0xFF; //Packet ID
+	    		packetLength = rxBuffer[(a+2)%rxBuffer.length] & 0xFF; //length of the packet
+	    		checkSum = 0; //Initialize checksum to 0
 	    		
-	    		//Copy putative packet starting at end of header
-	    		if((a+1+headerArray.length+packetLength) < readBuffer.length && packetLength <= packetArray.length && checkSum > 0) { //Check that packet is complete before trying to copy - ignore fragmented packets at end of buffer or packets that are longer than the packetArray they will be stored in
-	    			Arrays.fill(packetArray, (byte) 0); //Clear contents of packet array
-	    			System.arraycopy(readBuffer, a+headerArray.length, packetArray, 0, packetLength); //Copy putative header starting at STARTBYTE
-	        		
-	        		//Extract checksum from packet and verify it against checksum in data packet
-	        		for(int b=0; b<packetLength; b++) checkSum += (packetArray[b] & 0xFF);
-	System.out.println("Checksums: " + (checkSum % 256) + " " + (headerArray[2] & 0xFF));
-	        		if((checkSum % 256) == (headerArray[2] & 0xFF)) { //See if checksum matches checksum in datapacket
+	    		if(packetID > 0 && packetLength > HEADERLENGTH + 1 && (rxIndex - a)%rxBuffer.length > packetLength) { //Verify that ID and length are valid, and packet fits in remainder of buffer (i.e. is not a fragment)
+	    			
+		    		//Copy putative packet starting at end of header and calculate the checksum
+		    		for(b=0; b<(packetLength-HEADERLENGTH); b++){
+		    			packetArray[b] = rxBuffer[(b+a+HEADERLENGTH)%rxBuffer.length];
+		    			checkSum += packetArray[b];
+		    		}
+		
+System.out.println("Packet ID: " + packetID + ", Packet Length: " + packetLength + ", Checksums: " + (checkSum % 256) + " " + (rxBuffer[(a+3)%rxBuffer.length] & 0xFF) + ", packet end = ");
+	        		if((checkSum % 256) == (rxBuffer[(a+3)%rxBuffer.length] & 0xFF)) { //See if checksum matches checksum in datapacket
 	        			//If checksum is valid then valid packet structure - convert packet to int array and send to GUI
 	        			packetFound = packetProcessor(packetArray, packetID);
 	        			
 	        			//Move buffer index to end of packet
-	        			a += packetLength + headerArray.length-1;
+	        			rxStart = (a+packetLength)%rxBuffer.length;
+	        			a = rxStart-1;
 	        		}
 	    		}
 	    	}
@@ -258,10 +284,14 @@ public final class Pref_and_data {
 		switch (packetID) {
 			case IDPACKET: updateID(packet);
 				return true;
-			case TEMPPACKET: updateTemp(packet);
+			case STATUSPACKET: updateStatus(packet);
 				return true;
-			case PANELPACKET: updatePanel(packet);
+			case FAULTPACKET: updateFault(packet);
 				return true;
+			case RESETPACKET: sendReset(packet);
+				return true;
+			case DISCONNECTPACKET: sendDisconnect(packet);
+				return true;			
 			case WAVEPACKET: updateWave(packet);
 				return true;
 			default: return false; // If the packet ID is invalid, return false
@@ -278,39 +308,13 @@ public final class Pref_and_data {
     		String ID = new String(packetArray);
     		gui.addMenuItem(ID);
     	}
-    }
-//////////////////////////////////////PANEL////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public boolean[] updatePanel(byte[] packetArray) {
-    	boolean[] returnArray = {false, false}; //Initialize array that flags to controller if panel needs to be updated in GUI
-    	
-    	//Only read packet if device is initialized
-    	if(initializeComplete) {
-	    	double dialADC = (double) (packetArray[0] & 0xFF);
-	     	newPercent = dialADC/255D*100D;
-	       	dialAngle = (newPercent*dialSlope)+dialOffset;
-	       	
-	       	//If dial has sufficiently changed, or is at 0 or 100, then update GUI
-	       	if(newPercent > (currentPercent + dHist) || newPercent< (currentPercent - dHist) || newPercent == 0 || newPercent == 100) {
-	       		currentPercent = newPercent;
-	       		returnArray[0] = true;
-	       	}
-	       	else;
-	       	
-	       	//Check if toggle switch position has changed
-	       	boolean toggleState = packetArray[1]!=0; //Convert byte to boolean
-	       	if(toggleState^currentToggle) { // ^ = XOR - only if values are unequal returns true
-	       		currentToggle = toggleState;
-	       		returnArray[1] = true;
-	       	}   	
+    	else { //Otherwise, ID packet means device is now connected, so send and verify prefs, then adjust serial speed to live update rate
+    		
+    		serial.setSerialDelay(runReadWait, runSendWait);
     	}
-    	return returnArray;
     }
-	
-//////////////////////////////////////TEMPERATURE//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
-	
-   public boolean[] updateTemp(byte[] packetArray) {
-    	boolean[] returnArray = {false, false, false}; //Initialize array that flags to controller if temp needs to be updated in GUI
-    	
+//////////////////////////////////////STATUS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public void updateStatus(byte[] packetArray) {
     	//Only read packet if device is initialized
     	if(initializeComplete) {
     		
@@ -323,14 +327,39 @@ public final class Pref_and_data {
 	    			
 	    			//Check if current reading should be sent to GUI - i.e. has significantly changed
 	    			if(newTemp[a] > (currentTemp[a] + tHist) || newTemp[a] < (currentTemp[a] - tHist)) { 
-	    				currentTemp[a] = newTemp[a];
-	    				returnArray[a] = true;  				
+	    				currentTemp[a] = newTemp[a];				
 	    	    	}
     			}
     			else; //Otherwise, skip conversion and leave GUI flag false
     		}
+    		
+    		
+	    	double dialADC = (double) (packetArray[0] & 0xFF);
+	     	newPercent = dialADC/255D*100D;
+	       	dialAngle = (newPercent*dialSlope)+dialOffset;
+	       	
+	       	//If dial has sufficiently changed, or is at 0 or 100, then update GUI
+	       	if(newPercent > (currentPercent + dHist) || newPercent< (currentPercent - dHist) || newPercent == 0 || newPercent == 100) {
+	       		currentPercent = newPercent;
+	       	}
+	       	else;
+	       	
+	       	//Check if toggle switch position has changed
+	       	boolean toggleState = packetArray[1]!=0; //Convert byte to boolean
+	       	if(toggleState^currentToggle) { // ^ = XOR - only if values are unequal returns true
+	       		currentToggle = toggleState;
+	       	}   	
     	}
-    	return returnArray;
+    }
+	
+//////////////////////////////////////TEMPERATURE//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
+	
+   public void updateTemp(byte[] packetArray) {
+    	//Only read packet if device is initialized
+    	if(initializeComplete) {
+    		
+
+    	}
     }
     
     private double ADCtoCelcius(byte adcByte, int a) {
@@ -350,6 +379,15 @@ public final class Pref_and_data {
      	return conversion;
     }
 ///////////////////////////////////////WAVE///////////////////////////////////////////////////////////////////////////////////////////////////
+    private void updateFault(byte[] packetArray) {
+    	
+    }
+    private void sendReset(byte[] packetArray) {
+    	
+    }
+    private void sendDisconnect(byte[] packetArray) {
+    	
+    }
     private void updateWave(byte[] packetArray) {
     	
     }
