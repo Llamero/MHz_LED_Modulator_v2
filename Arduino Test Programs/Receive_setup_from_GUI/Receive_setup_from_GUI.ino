@@ -1,5 +1,5 @@
 //const char IDARRAY[] = "MOM Test Box";
-const char IDARRAY[] = "Just an Arduino";
+const char IDARRAY[] = "Just an Arduino Just an Arduino Just an Arduino";
 const long BAUDRATE = 250000;
 const long TIMEOUT = (long) (((1000/(float) BAUDRATE)*(64*8)) + 1000); //Wait the expected time needed to fill the serial buffer (64 bytes in size) plus a fixed delay of 0.1s to allow the GUI to respond
 
@@ -32,7 +32,7 @@ const uint8_t DISCONNECTPACKET = 12; //Identifies packet commanding driver to re
 const uint8_t HEADER = 4; //Indentifies length of header
 const uint8_t WAVEPACKET = 250+HEADER; //Identifies packet as recorded analog waveform - also is number of bytes in packet
 const uint8_t IDSIZE = sizeof(IDARRAY) + HEADER; //Size of ID packet
-const uint8_t SETUPSIZE = 25+HEADER; //Expected size of recieved setup packet, see byte order below:
+const uint8_t SETUPSIZE = 26+HEADER; //Expected size of recieved setup packet, see byte order below:
 const uint8_t COMMANDSIZE = 1+HEADER; //Commands are just one byte in length after the header
 const uint8_t NINITIALIZE = 4; //Number of times to try connecting to GUI until instead booting using default settings
 
@@ -49,13 +49,14 @@ uint8_t FAULTLED = B00000100; //Alarm to alert to warning temperature (0=false, 
 uint8_t FAULTVOLUME = 127; //Volume of alarm to alert to fault temperature (0 = min, 127 = max);
 uint8_t STARTVOLUME = 10; //Volume of short tone upon initializing (0 = min, 127 = max);
 boolean PWMFAN = 0; //Digital I/O 2 as PWM fan controller (0=N/A, 1=on)
+uint8_t FANPIN = 0; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
 boolean SYNCTYPE = 0; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
 boolean DTRIGGERPOL = 0; //digital trigger polarity (0 = High, 1 = Low)
 boolean ATRIGGERPOL = 0; //analog trigger polarity (0 = Rising, 1 = Falling)
 boolean LEDSOURCE = 0; //LED intensity signal source (0 = Ext source, 1 = AWG source)
 boolean TRIGHOLD = 0; //trigger hold (0 = single shot, 1 = repeat until trigger resets), 
 boolean AWGSOURCE = 0; //AWG source (0=txPacket, 1=mirror the intensity knob),             
-boolean SYNCOUT = B01000000; //Digital I/O 2 as sync out (0=false, 64=true)
+boolean SYNCOUT = B00000000; //Digital I/O 2 as sync out (0=false, 64=true)
 
 //Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
 //Maximum data packet size is 252 bytes (256 bytes - 4 bytes for header)
@@ -294,6 +295,7 @@ void setupPacket(){
   FAULTVOLUME = rxBuffer[rxStart++]; //Alarm to alert to fault temperature
   STARTVOLUME = rxBuffer[rxStart++]; //Volume of short tone upon initializing
   PWMFAN = rxBuffer[rxStart++]; //Digital I/O 2 as PWM fan controller (0=N/A, 1=on)   
+  FANPIN = rxBuffer[rxStart++] & B01100000; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
   SYNCTYPE = rxBuffer[rxStart++]; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
   DTRIGGERPOL = rxBuffer[rxStart++]; //digital trigger polarity (0 = High, 1 = Low)
   ATRIGGERPOL = rxBuffer[rxStart++]; //analog trigger polarity (0 = Rising, 1 = Falling)
@@ -313,7 +315,7 @@ void checkSetup(){
   }
   //Check that packet values are valid
   if(FANMAXTEMP > FANMINTEMP && TRIGGER < 4 && (ANALOGSEL-3) < 2 && FAULTVOLUME < 128 && STARTVOLUME < 128){ //Check numerical values for validity
-    if((!FAULTLED || FAULTLED == 4)){ //Check pin ID variables
+    if((!FAULTLED || FAULTLED == 4) && (!FANPIN || FANPIN == 32 || FANPIN == 64) && (!SYNCOUT || SYNCOUT == 64)){ //Check pin ID variables
       if(PWMFAN < 2 && SYNCTYPE < 2 && DTRIGGERPOL < 2 && ATRIGGERPOL < 2 && LEDSOURCE < 2 && TRIGHOLD < 2 && AWGSOURCE < 2 && SYNCOUT < 2){ //Check boolean variables
         //If setup is valid, then initialization is successful
         initialized = true;

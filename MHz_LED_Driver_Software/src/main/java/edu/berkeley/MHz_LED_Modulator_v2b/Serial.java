@@ -64,7 +64,6 @@ public final class Serial {
         //Make instance of GUI
         int nPorts = SerialPort.getCommPorts().length;
         serialPorts = SerialPort.getCommPorts();
-        JRadioButtonMenuItem[] tempMenu = new JRadioButtonMenuItem[nPorts]; //Create a temporary array to store menu items to give to GUI
         int devicePorts = 0; //Counter for number of device ports found out of all ports available
         //Toggle each port checking for any that send an ID packet       
         for(int a = 0; a < nPorts; a++){
@@ -134,10 +133,10 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
     private boolean readSerial(){
     	packetFound = false; //Reset pack found flag
         readLength = arduinoPort.readBytes(readBuffer, readBuffer.length);
-System.out.println("Buffer: " + Arrays.toString(readBuffer));
         //If minimal packet size is received then verify contents
 		if(readLength > HEADERLENGTH) {
-			packetFound = data.parseSerial(readBuffer, readLength);			
+			packetFound = data.parseSerial(readBuffer, readLength);
+System.out.println("Buffer: " + Arrays.toString(readBuffer));
 		}
 		return packetFound;
     }

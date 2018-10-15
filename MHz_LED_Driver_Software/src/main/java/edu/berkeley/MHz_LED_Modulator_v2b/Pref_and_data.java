@@ -33,7 +33,7 @@ public final class Pref_and_data {
     private static final byte STARTBYTE = 0; //Identifies start of packet
     private static final int BAUDRATE = 250000; //Baud rate of serial communication
     private static final String PREFERREDPORT = null; //Set preferred port to null flagging that no preferred port is selected
-	private static final int INITIALREADWAIT = 2000; //Time to wait for receiving entire packet during initialization
+	private static final int INITIALREADWAIT = 3000; //Time to wait for receiving entire packet during initialization
 	private static final int INITIALSENDWAIT = INITIALREADWAIT; //Time to wait for sending entire packet during initialization
 	private static final int RUNREADWAIT = 200; //Update rate when GUI is running
 	private static final int RUNSENDWAIT = RUNREADWAIT; //Time to wait for sending entire packet
@@ -235,24 +235,25 @@ public final class Pref_and_data {
 		//Load most recent stream into the rxBuffer
 		for(a = 0; a<readLength; a++) {
 			rxBuffer[rxIndex++] = readBuffer[a];
-			rxIndex %= rxBuffer.length; //If end of buffer is reached loop to beginning
+			rxIndex %= rxBuffer.length; //If end of buffer is reached loop to beginning to create circular buffer
 		}
 		
 		//Search entire buffer for all valid packets
-	    for(a = rxStart; a != rxIndex; a=(a+1)%rxBuffer.length) {
-	    	
-	    	if(rxBuffer[a] == STARTBYTE && (rxIndex - a)%rxBuffer.length > HEADERLENGTH + 1) { //Search for startbyte and check that there is sufficient data left in buffer for a packet
+	    for(a = rxStart; a != Math.floorMod((rxIndex-HEADERLENGTH-1), rxBuffer.length); a=(a+1)%rxBuffer.length) { //Search circular buffer for packet
+System.out.println(a);
+	    	if(rxBuffer[a] == STARTBYTE) { //Search for startbyte
+System.out.println("0 found");
 	    		//Extract header bytes and convert uint8_t to int (variable & 0xFF) - https://stackoverflow.com/questions/14071361/java-how-to-parse-uint8-in-java 
 	    		packetID = rxBuffer[(a+1)%rxBuffer.length] & 0xFF; //Packet ID
 	    		packetLength = rxBuffer[(a+2)%rxBuffer.length] & 0xFF; //length of the packet
 	    		checkSum = 0; //Initialize checksum to 0
 	    		
-	    		if(packetID > 0 && packetLength > HEADERLENGTH + 1 && (rxIndex - a)%rxBuffer.length > packetLength) { //Verify that ID and length are valid, and packet fits in remainder of buffer (i.e. is not a fragment)
+	    		if(packetID > 0 && packetLength > HEADERLENGTH && Math.floorMod((rxIndex - a), rxBuffer.length) >= packetLength) { //Verify that ID and length are valid, and packet fits in remainder of buffer (i.e. is not a fragment)
 	    			
 		    		//Copy putative packet starting at end of header and calculate the checksum
 		    		for(b=0; b<(packetLength-HEADERLENGTH); b++){
 		    			packetArray[b] = rxBuffer[(b+a+HEADERLENGTH)%rxBuffer.length];
-		    			checkSum += packetArray[b];
+		    			checkSum += packetArray[b] & 0xFF;
 		    		}
 		
 System.out.println("Packet ID: " + packetID + ", Packet Length: " + packetLength + ", Checksums: " + (checkSum % 256) + " " + (rxBuffer[(a+3)%rxBuffer.length] & 0xFF) + ", packet end = ");
@@ -268,7 +269,7 @@ System.out.println("Packet ID: " + packetID + ", Packet Length: " + packetLength
 	    	}
 
 	    	if(!initializeComplete && packetFound) {
-				
+	    		
 ////NOTE: Install handshake code here to exchange critical parameters with arduino such as fault temps, etc.+++++++++++++++++++++++++++++++++++++	    		    	
 //	    		serial.reply(new byte[] {CONFIRMBYTE, headerArray[2]}); //Tell Arduino that it's ID was found and to boot into loop
 	    		nArduino++; //Add one to the number of devices found
@@ -277,9 +278,11 @@ System.out.println("Packet ID: " + packetID + ", Packet Length: " + packetLength
 	    }
 	    return packetFound;
 	}
+	
 	public int getNarduino() {
 		return nArduino;
 	}
+	
 	public boolean packetProcessor(byte[] packet, int packetID) {
 		switch (packetID) {
 			case IDPACKET: updateID(packet);

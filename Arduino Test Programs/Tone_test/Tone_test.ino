@@ -8,7 +8,7 @@ DDRB |= B00111111; //Set all pins as output
 void loop() {
   // put your main code here, to run repeatedly:
   PORTB |= B00000100; //Turn on warning LED
-  for(a=0; a<100; a++){ //Generate tone for 0.1 seconds
+  for(a=0; a<3500; a++){ //Generate tone for 0.1 seconds
     PORTB |= B00010000;
     delayMicroseconds(volume);
     PORTB &= B11101111;
