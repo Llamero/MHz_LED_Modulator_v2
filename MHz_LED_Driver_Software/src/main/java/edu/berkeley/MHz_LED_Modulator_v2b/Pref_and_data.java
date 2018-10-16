@@ -44,6 +44,8 @@ public final class Pref_and_data {
     private static final int RESETPACKET = 11; //Command to driver to move to first line of code (address 0) - soft restart
     private static final int DISCONNECTPACKET = 12; //Command to driver to enter disconnect status
     private static final int WAVEPACKET = HEADERLENGTH + 250; //Identifies packet as recorded analog waveform
+    //--Standard packets
+	private static final byte[] DISCONNECTPACKETARRAY = new byte[] {STARTBYTE, DISCONNECTPACKET, HEADERLENGTH+1, DISCONNECTPACKET, DISCONNECTPACKET};   
     
     //Preference keys
     //Panel
@@ -131,7 +133,7 @@ public final class Pref_and_data {
     
     public void shareConstants() {
     	gui.setConstants(minTemp, warnTemp, faultTemp, DEFAULTTEMP, TOGGLEPOSITIONS, defaultAngle, DEFAULTPERCENT);
-    	serial.setConstants(baudRate, preferredPort, warnTemp, faultTemp, initialReadWait, initialSendWait, HEADERLENGTH);
+    	serial.setConstants(baudRate, preferredPort, initialReadWait, initialSendWait, HEADERLENGTH, DISCONNECTPACKETARRAY);
     }
 //    public void setControllerConstants() {
 //    	controller.getModelConstants(IDPACKET, TEMPPACKET, PANELPACKET, WAVEPACKET, initializeComplete);
@@ -310,9 +312,9 @@ System.out.println("INVALID PACKET----------------------------------------------
     	if(!initializeComplete) {
     		String ID = new String(packetArray);
     		gui.addMenuItem(ID);
+System.out.println(ID);
     	}
-    	else { //Otherwise, ID packet means device is now connected, so send and verify prefs, then adjust serial speed to live update rate
-    		
+    	else { //Otherwise, ID packet means device is now connected, so send and verify prefs, then adjust serial speed to live update rate    		
     		serial.setSerialDelay(runReadWait, runSendWait);
     	}
     }

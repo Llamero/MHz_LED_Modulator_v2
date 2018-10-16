@@ -29,34 +29,23 @@ public final class Serial {
 	private Pref_and_data data; //Instance of controller so events can be passed back to controller
 	private int BAUDRATE; //Baud rate for serial connection
 	private String PREFERREDPORT; //Port that program should connect to if available
-	private double[] WARNTEMP; //Temperature at which driver and GUI will warn user of overheat state - 0-input, 1-output, 2-external
-	private double[] FAULTTEMP; //Temperature at which driver will shutoff automatically - 0-input, 1-output, 2-external
 	private int INITIALREADWAIT; //Time to wait for receiving entire packet during initialization
 	private int INITIALSENDWAIT; //Time to wait for sending entire packet during initialization
-
 	private int HEADERLENGTH; //Number of bytes in packet header
+	private byte[] DISCONNECTPACKET; //Preformatted packet to tell driver the GUI has disconnected
     
     public void setModules(GUI_temp_and_panel gui, Pref_and_data data) {
     	this.gui = gui;
     	this.data = data;
     }
     
-    public void setConstants(int baudRate, String preferredPort, double[] warnTemp, double[] faultTemp, int initialReadWait, int initialSendWait, int headerLength) {
+    public void setConstants(int baudRate, String preferredPort, int initialReadWait, int initialSendWait, int headerLength, byte[] disconnectPacket) {
     	this.BAUDRATE = baudRate;
     	this.PREFERREDPORT = preferredPort;
-    	this.WARNTEMP = warnTemp;
-    	this.FAULTTEMP = faultTemp; 
     	this.INITIALREADWAIT = initialReadWait;
     	this.INITIALSENDWAIT = initialSendWait;
     	this.HEADERLENGTH = headerLength;
-    }
-    
-    public void disconnect() {
-        if(arduinoPort != null) {
-        	arduinoPort.writeBytes(new byte[] {0, 50}, 2);
-        	if(arduinoPort.isOpen()) arduinoPort.closePort(); 
-        	arduinoConnect = false;
-        }
+    	this.DISCONNECTPACKET = disconnectPacket;
     }
     
     public boolean initializeSerial(){
@@ -64,7 +53,6 @@ public final class Serial {
         //Make instance of GUI
         int nPorts = SerialPort.getCommPorts().length;
         serialPorts = SerialPort.getCommPorts();
-        int devicePorts = 0; //Counter for number of device ports found out of all ports available
         //Toggle each port checking for any that send an ID packet       
         for(int a = 0; a < nPorts; a++){
             arduinoPort = serialPorts[a];
@@ -74,7 +62,7 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
             arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, INITIALREADWAIT, INITIALSENDWAIT); //Blocking means wait the full 2000ms to catch the set number of bytes
             arduinoPort.openPort();
             readSerial();
-			arduinoPort.closePort();			
+            disconnect();			
 	    }
       
         //Add disconnect option to connect menu
@@ -128,6 +116,17 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
             gui.resetDisplay();
         }
     }
+    
+    public void disconnect() {
+        if(arduinoPort != null) {
+        	if(arduinoPort.isOpen()) {
+            	for(int a=0; a<3; a++) arduinoPort.writeBytes(DISCONNECTPACKET, DISCONNECTPACKET.length); //Tell driver 3x that the GUI has now disconnected
+        		arduinoPort.closePort(); 
+        	}
+        	arduinoConnect = false;
+        }
+    }
+    
     
     //Read serial data and load it into a circular buffer
     private boolean readSerial(){
