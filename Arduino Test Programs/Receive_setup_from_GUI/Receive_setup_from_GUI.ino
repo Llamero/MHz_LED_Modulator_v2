@@ -30,18 +30,21 @@ const uint8_t STATUSPACKET = 6; //Identifies packet as temperature recordings an
 const uint8_t FAULTPACKET = 10; //Identifies packet as driver entering or exiting fault state - or if received, then commanding driver to enter fault state (i.e. fault test)
 const uint8_t RESETPACKET = 11; //Identifies packet commanding driver to reset
 const uint8_t DISCONNECTPACKET = 12; //Identifies packet commanding driver to reset
+const uint8_t SETUPPACKET = 28; //Identifies packet as receiving setup configuration information - also is number of data bytes in packet
 const uint8_t HEADER = 4; //Indentifies length of header
 const uint8_t WAVEPACKET = 250+HEADER; //Identifies packet as recorded analog waveform - also is number of bytes in packet
 const uint8_t IDSIZE = sizeof(IDARRAY) + HEADER; //Size of ID packet
-const uint8_t SETUPSIZE = 26+HEADER; //Expected size of recieved setup packet, see byte order below:
+const uint8_t SETUPSIZE = SETUPPACKET+HEADER; //Expected size of recieved setup packet, see byte order below:
 const uint8_t COMMANDSIZE = 1+HEADER; //Commands are just one byte in length after the header
 const long TIMEOUT = (long) (((1000/(float) BAUDRATE)*(64*8)) + 1000); //Wait the expected time needed to fill the serial buffer (64 bytes in size) plus a fixed delay of 0.1s to allow the GUI to respond
 
 //Setup variables
 uint8_t WARNTEMP[] = {98, 98, 98}; //warn temps, warn of overheating at 60oC (60oC = 98 on 8-bit ADC)
 uint8_t FAULTTEMP[] = {66, 66, 66}; //fault temps. enter fault at 80oC (80oC = 66 on 8-bit ADC)
-uint16_t ONDELAY = 0; //On delay
-uint16_t OFFDELAY = 0; //Off delay
+uint16_t ONDELAY = 0; //Delay from previous event before LED is turned on
+uint16_t OFFDELAY = 0; //Delay from previous event before LED is turned off
+boolean DELAYORDER = 0; //Order of delays before trigger (0 = LED starts off, 1 = LED starts on);
+boolean DELAYUNITS = 0; //us or ms delay - confocal sync will always use us - us is also capped at 16383 (0 = us; 1 = ms)
 uint8_t FANMINTEMP = 173; //LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
 uint8_t FANMAXTEMP = WARNTEMP[0]; //LED temp above which the PWM fan runs at maximum speed, - default to warn temp  
 uint8_t TRIGGER = 0; //trigger (0=toggle, 1=analog, 2=digital, 3=digital activates analog - such as shutter open then trigger off of fast mirror)
@@ -49,15 +52,15 @@ uint8_t ANALOGSEL = 3; //(analog select (3 = diode, 4 = raw)
 uint8_t FAULTLED = B00000100; //Alarm to alert to warning temperature (0=false, 4=true)
 uint8_t FAULTVOLUME = 127; //Volume of alarm to alert to fault temperature (0 = min, 127 = max);
 uint8_t STARTVOLUME = 10; //Volume of short tone upon initializing (0 = min, 127 = max);
-boolean PWMFAN = 0; //Digital I/O 2 as PWM fan controller (0=N/A, 1=on)
+boolean PWMFAN = 0; //Digital I/O as PWM fan controller (0=N/A, 1=on)
 uint8_t FANPIN = 0; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
 boolean SYNCTYPE = 0; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
 boolean DTRIGGERPOL = 0; //digital trigger polarity (0 = High, 1 = Low)
 boolean ATRIGGERPOL = 0; //analog trigger polarity (0 = Rising, 1 = Falling)
 boolean LEDSOURCE = 0; //LED intensity signal source (0 = Ext source, 1 = AWG source)
 boolean TRIGHOLD = 0; //trigger hold (0 = single shot, 1 = repeat until trigger resets), 
-boolean AWGSOURCE = 0; //AWG source (0=txPacket, 1=mirror the intensity knob),             
-boolean SYNCOUT = B00000000; //Digital I/O 2 as sync out (0=false, 64=true)
+boolean AWGSOURCE = 0; //AWG source (0=rxPacket, 1=mirror the intensity knob),             
+uint8_t SYNCOUT = 0; //Digital I/O 2 as sync out (0=false, 64=true)
 
 //Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
 //Maximum data packet size is 252 bytes (256 bytes - 4 bytes for header)
@@ -75,7 +78,8 @@ int a = 0; //Dummy int counter
 uint8_t counter = 0; //Dummy 8-bit counter
 boolean syncStatus = false; //Flag for tracking if actively triggering LED or in standby
 uint8_t toggleSwitch = 0; //FLag for tracking position of toggle switch - B00000000 = off, B00000100 = on
-boolean updateStatus = false;
+volatile boolean updateStatus = false; //Flag set by interrupt to check status - volatile variable as it resides in an interrupt
+uint8_t nTry = 0; //Number of sttempts made at connecting to GUI
 
 //PORT D: USB, Switches, Digital I/O
 //0 - USB RX
@@ -140,11 +144,12 @@ void loop() {
     if(event == 2);//----------------------------------------------------------------------------------------------------------HANDLE TOGGLE EVENT-------------------------------------------------------------------------
     if(event == 3) failSafe();
   }
+  delay(1);
 }
 
 void initializeDevice(){
   initialized = false;
-  uint8_t nTry = NINITIALIZE;
+  nTry = NINITIALIZE;
   while(Serial.available()) Serial.read(); //Flush all remaining bytes from input buffer
   while(!initialized){ //Repeat initialization until a successful initialization 
     while(Serial.read() && nTry){ //Keep sending header until 0 is received (no data = -1 which is "true") or counter reaches 0;
@@ -241,11 +246,13 @@ void processReceivedPackets(){
     if(packetLength >= HEADER+1){ //If minimum number of necessary bytes were recieved, check buffer for setup packet
       for(a=0; a<=(packetLength-HEADER-1); a++){ //Search for valid header in packet
         if(!rxBuffer[a]){ //If start byte is found, check for valid packet
-          if(rxBuffer[a+1] == STATUSPACKET && rxBuffer[a+2] == SETUPSIZE && a <= (packetLength - SETUPSIZE)){ //if packet has valid status packet header - parse packet
+          if(rxBuffer[a+1] == SETUPPACKET && rxBuffer[a+2] == SETUPSIZE && a <= (packetLength - SETUPSIZE + 1)){ //if packet has valid status packet header - parse packet
              rxStart = a; //Initialize rxStart to current index
-             rxIndex = a+SETUPSIZE; //Initialize rxIndex to next position after end of putative setup packet
+             rxIndex = a; //Initialize rxIndex to current index (will slide rxIndex to end of packet during confrimation process)
              setupPacket();
+             return; //Break loop if setup packet is found
           }
+          //Otherwise, if a command of disconnect is received (i.e. GUI initialization) then wait in standby
           else if(rxBuffer[a+1] == DISCONNECTPACKET && rxBuffer[a+2] == COMMANDSIZE && rxBuffer[a+3] == DISCONNECTPACKET && rxBuffer[a+4] == DISCONNECTPACKET && a <= (packetLength - COMMANDSIZE)) driverStandby();
         }
       }
@@ -285,9 +292,14 @@ void driverStandby(){
 void setupPacket(){
   //Confirm checksum
   checkSum = 0;
-  for(a=rxStart+HEADER; a<rxIndex; a++){
+  for(a=rxStart+HEADER; a<rxStart + SETUPSIZE; a++){
     checkSum += rxBuffer[a];
   }
+for(a=rxIndex; a < rxIndex+SETUPSIZE; a++) Serial.write(rxBuffer[a]);
+  Serial.write(checkSum);
+  Serial.write(checkSum);
+  Serial.write(rxBuffer[rxStart+3]);
+  Serial.write(rxBuffer[rxStart+3]);
   if(rxBuffer[rxStart+3] != checkSum) return; //If checksum is not valid, exit parsing function and continue searching for valid setup packet
   
   rxStart += HEADER; //Move the index forward to start of data
@@ -298,12 +310,14 @@ void setupPacket(){
   FAULTTEMP[0] = rxBuffer[rxStart++]; //fault temps. enter fault at 80oC (80oC = 66 on 8-bit ADC)
   FAULTTEMP[1] = rxBuffer[rxStart++];
   FAULTTEMP[2] = rxBuffer[rxStart++];
-  bytesToUint16.bValue[1] = rxBuffer[rxStart++]; //Assemble uint16_t value
   bytesToUint16.bValue[0] = rxBuffer[rxStart++]; //Assemble uint16_t value
-  ONDELAY = bytesToUint16.value; //On delay
   bytesToUint16.bValue[1] = rxBuffer[rxStart++]; //Assemble uint16_t value
+  ONDELAY = bytesToUint16.value; //Delay from previous event before LED is turned on
   bytesToUint16.bValue[0] = rxBuffer[rxStart++]; //Assemble uint16_t value
-  OFFDELAY = bytesToUint16.value; //Off delay
+  bytesToUint16.bValue[1] = rxBuffer[rxStart++]; //Assemble uint16_t value
+  OFFDELAY = bytesToUint16.value; //Delay from previous event before LED is turned off
+  DELAYORDER = rxBuffer[rxStart++]; //Order of delays before trigger (0 = LED starts off, 1 = LED starts on);
+  DELAYUNITS = rxBuffer[rxStart++]; //us or ms delay - confocal sync will always use us - us is also capped at 16383 (0 = us; 1 = ms)
   FANMINTEMP = rxBuffer[rxStart++]; //LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
   FANMAXTEMP = rxBuffer[rxStart++]; //LED temp above which the PWM fan runs at maximum speed, - default to warn temp 
   TRIGGER = rxBuffer[rxStart++]; //trigger (0=toggle, 1=analog, 2=digital, 3=digital activates analog - such as shutter open then trigger off of fast mirror)
@@ -311,7 +325,7 @@ void setupPacket(){
   FAULTLED = rxBuffer[rxStart++] & B00000100; //Alarm to alert to warning temperature (0=false, 4=true) - use bitmask for safety (protects other pins from being accidentally overwritten in the event of a bad byte)
   FAULTVOLUME = rxBuffer[rxStart++]; //Alarm to alert to fault temperature
   STARTVOLUME = rxBuffer[rxStart++]; //Volume of short tone upon initializing
-  PWMFAN = rxBuffer[rxStart++]; //Digital I/O 2 as PWM fan controller (0=N/A, 1=on)   
+  PWMFAN = rxBuffer[rxStart++]; //Digital I/O as PWM fan controller (0=N/A, 1=on)   
   FANPIN = rxBuffer[rxStart++] & B01100000; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
   SYNCTYPE = rxBuffer[rxStart++]; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
   DTRIGGERPOL = rxBuffer[rxStart++]; //digital trigger polarity (0 = High, 1 = Low)
@@ -330,24 +344,32 @@ void checkSetup(){
   for(a=0; a<3; a++){
     if(WARNTEMP[a] <= FAULTTEMP[a] || WARNTEMP[a] > 245 || FAULTTEMP[a] > 245 || WARNTEMP < 10 || FAULTTEMP < 10) return; //Setup is not valid if set temps are at the edge of the ADC range (roughly <-25oC or >180oC for standard thermistors)
   }
+
   //Check that packet values are valid
   if(FANMAXTEMP < FANMINTEMP && TRIGGER < 4 && (ANALOGSEL-3) < 2 && FAULTVOLUME < 128 && STARTVOLUME < 128){ //Check numerical values for validity
     if((!FAULTLED || FAULTLED == 4) && (!FANPIN || FANPIN == 32 || FANPIN == 64) && (!SYNCOUT || SYNCOUT == 64)){ //Check pin ID variables
-      if(PWMFAN < 2 && SYNCTYPE < 2 && DTRIGGERPOL < 2 && ATRIGGERPOL < 2 && LEDSOURCE < 2 && TRIGHOLD < 2 && AWGSOURCE < 2 && SYNCOUT < 2){ //Check boolean variables
-        //If setup is valid, then initialization is successful
-        initialized = true;
-        SPI.end(); //End SPI so that locks on warning LED and buzzer are released
-        PORTB |= FAULTLED; //Turn on warning LED
-        for(a=0; a<500; a++){ //Generate tone for 0.1 seconds
-          taskIndex++;  
-          PORTB |= B00010000;
-          delayMicroseconds(STARTVOLUME);
-          PORTB &= B11101111;
-          delayMicroseconds(255-STARTVOLUME);
-        }
-        delay(500); //Wait for reset from GUI in case setup packet does not match
-        PORTB &= B11111011; //Turn off warning LED
-        SPI.begin(); //Re-start SPI                      
+      if(DELAYORDER < 2 && DELAYUNITS < 2 && PWMFAN < 2 && SYNCTYPE < 2 && DTRIGGERPOL < 2 && ATRIGGERPOL < 2 && LEDSOURCE < 2 && TRIGHOLD < 2 && AWGSOURCE < 2 && SYNCOUT < 2){ //Check boolean variables - d
+        if((!SYNCTYPE == DELAYUNITS) || !SYNCTYPE){ //Confirm that the delay units are in us if using a confocal sync
+          if((!DELAYUNITS && (ONDELAY < 16384 && OFFDELAY < 16384)) || DELAYUNITS){ //If us, make sure that value does not exceed 16383 cap - https://www.arduino.cc/reference/en/language/functions/time/delaymicroseconds/
+            for(a=rxIndex; a < rxIndex+SETUPSIZE; a++) txPacket[a-rxIndex] = rxBuffer[a];
+            Serial.write(txPacket, SETUPSIZE); //Send received setup back back to computer for confirmation
+                        
+            //If setup is valid, then initialization is successful
+            initialized = true;
+            SPI.end(); //End SPI so that locks on warning LED and buzzer are released
+            PORTB |= FAULTLED; //Turn on warning LED
+            for(a=0; a<500; a++){ //Generate tone for 0.1 seconds
+              taskIndex++;  
+              PORTB |= B00010000;
+              delayMicroseconds(STARTVOLUME);
+              PORTB &= B11101111;
+              delayMicroseconds(255-STARTVOLUME);
+            }
+            delay(1000); //Wait for reset from GUI in case setup packet does not match
+            PORTB &= B11111011; //Turn off warning LED
+            SPI.begin(); //Re-start SPI  
+          }
+        }                    
       }
     }
   }
