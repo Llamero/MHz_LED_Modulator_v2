@@ -23,10 +23,10 @@ const unsigned char PS_4 = (1 << ADPS1);
 //const unsigned char PS_64 = (1 << ADPS2) | (1 << ADPS1);
 const unsigned char PS_128 = (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); //Default pre-scaler in Arduino
 
-//Serial constants - NOTE: Command bytes cannot equal 0 (0x00) or 128 (0x80) as both of these will create a checksum of 0, which is invalid
+//Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
 const uint8_t STARTBYTE = 0; //Identifies start of packet
 const uint8_t IDPACKET = 1; //Identifies packet as device identification packet
-const uint8_t STATUSPACKET = 6; //Identifies packet as temperature recordings - also is number of data bytes in packet
+const uint8_t STATUSPACKET = 6; //Identifies packet as temperature recordings and panel status - also is number of data bytes in packet
 const uint8_t FAULTPACKET = 10; //Identifies packet as driver entering or exiting fault state - or if received, then commanding driver to enter fault state (i.e. fault test)
 const uint8_t RESETPACKET = 11; //Identifies packet commanding driver to reset
 const uint8_t DISCONNECTPACKET = 12; //Identifies packet commanding driver to reset
@@ -159,7 +159,7 @@ void initializeDevice(){
       if(initialized && NOSERIAL) Serial.end(); //If default is valid and no serial is requested in manual mode, turn off serial
       nTry = NINITIALIZE; //Reset the retry counter
     }
-    else processReceivedPackets(); //If there was a successful connection, try and get the incoming setup packet
+    else processReceivedPackets(); //If there was a successful connection, try and get the incoming setup packet or disconnect packet
   }
 
   //Once initialized, turn on interrupts to begin monitoring the device
@@ -181,6 +181,7 @@ void initializeDevice(){
 //Index for recording current position in background tasks 0-2 - record temperatures, 3 - record knob, 4 - sync status (on/off), 5-toggle switch, 6-build header, 7-17 - send byte[n-7]
 void checkStatus(){
   taskIndex++; //Increment task index
+  updateStatus = false; //Reset status flag
   if(SYNCTYPE) interrupts(); //Turn interrupts back on if in confocal mode - needed for serial communication
   if(taskIndex >= 0 && taskIndex <= 2){ //Record temperature - 12us
     analogRead(taskIndex); //Refresh ADC
@@ -237,12 +238,15 @@ void processReceivedPackets(){
   uint8_t packetLength = 0;
   if(!initialized){
     packetLength = Serial.readBytes(rxBuffer, 64); //If not initialized, retrieve the entire rx serial buffer
-    if(packetLength >= SETUPSIZE){ //If minimum number of necessary bytes were recieved, check buffer for setup packet
-      for(a=0; a<=(packetLength-SETUPSIZE); a++){ //Search for valid header in packet
-        if(!rxBuffer[a] && rxBuffer[a+1] == STATUSPACKET && rxBuffer[a+2] == SETUPSIZE){ //if packet has valid status packet header - parse packet
-           rxStart = a; //Initialize rxStart to current index
-           rxIndex = a+SETUPSIZE; //Initialize rxIndex to next position after end of putative setup packet
-           setupPacket();
+    if(packetLength >= HEADER+1){ //If minimum number of necessary bytes were recieved, check buffer for setup packet
+      for(a=0; a<=(packetLength-HEADER-1); a++){ //Search for valid header in packet
+        if(!rxBuffer[a]){ //If start byte is found, check for valid packet
+          if(rxBuffer[a+1] == STATUSPACKET && rxBuffer[a+2] == SETUPSIZE && a <= (packetLength - SETUPSIZE)){ //if packet has valid status packet header - parse packet
+             rxStart = a; //Initialize rxStart to current index
+             rxIndex = a+SETUPSIZE; //Initialize rxIndex to next position after end of putative setup packet
+             setupPacket();
+          }
+          else if(rxBuffer[a+1] == DISCONNECTPACKET && rxBuffer[a+2] == COMMANDSIZE && rxBuffer[a+3] == DISCONNECTPACKET && rxBuffer[a+4] == DISCONNECTPACKET && a <= (packetLength - COMMANDSIZE)) driverStandby();
         }
       }
     }
@@ -251,7 +255,8 @@ void processReceivedPackets(){
     rxBuffer[rxIndex] = Serial.read(); //Otherwise, load single byte into circular buffer
     packetLength = rxIndex - rxStart;
     if(rxIndex == rxStart && rxBuffer[rxIndex++]) rxStart = rxIndex; //If start of packet is not yet found (either leading 0x00 or rxIndex != rxStart) then move the start point one increment forward as well 
-    else if(packetLength == COMMANDSIZE){ //If packet is proper comand length, check for valid header
+    else if(packetLength == COMMANDSIZE){ //If packet is proper comand length, check for valid header - 
+      //Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
       if(rxBuffer[rxStart] == 0 && rxBuffer[rxStart+1] == rxBuffer[rxStart+HEADER] && rxBuffer[rxStart+2] == COMMANDSIZE && rxBuffer[rxStart+3] == rxBuffer[rxStart+HEADER]){ //If header is valid, parse the command
         if(rxBuffer[rxStart+HEADER] == DISCONNECTPACKET) driverStandby(); //If disconnect is received, stop driver until reconnect resets driver.  This keeps driver from spamming serial buffer
         else if(rxBuffer[rxStart+HEADER] == RESETPACKET) resetPacket(); //If reset command is received, set program line index to and reinitialize driver without hard reset
@@ -267,9 +272,13 @@ void processReceivedPackets(){
 
 void driverStandby(){
   PORTD |= B00011000; //Set analog swich to negative voltage output - this will force the LED off (due to rail offset - grounding the LED would still leave LED with low current)
+  PORTB |= B00100000;
   Serial.end(); //Stop serial communication so Arduino does not spam output buffer
   TIMSK0 |= _BV(OCIE0A); //Turn interrupts on to continue monitoring driver temperature - and alarm if overtemp
-  while(1); //Hold until reset
+  while(1){ //Hold until reset
+    delay(1);
+    checkStatus();
+  }
 }
 
 //Parse the setup packet and then check if valid
