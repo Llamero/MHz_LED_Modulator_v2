@@ -1,7 +1,8 @@
 //const char IDARRAY[] = "MOM Test Box";
-const char IDARRAY[] = "Just an Arduino Just an Arduino Just an Arduino";
+const char IDARRAY[] = "Just an Arduino";
 const long BAUDRATE = 250000;
-const long TIMEOUT = (long) (((1000/(float) BAUDRATE)*(64*8)) + 1000); //Wait the expected time needed to fill the serial buffer (64 bytes in size) plus a fixed delay of 0.1s to allow the GUI to respond
+const uint8_t NINITIALIZE = 4; //Number of times to try connecting to GUI until instead booting using default settings
+const boolean NOSERIAL = true; //If the device boots into default configuration due to no serial, turn off serial
 
 #include <SPI.h>
 
@@ -34,7 +35,7 @@ const uint8_t WAVEPACKET = 250+HEADER; //Identifies packet as recorded analog wa
 const uint8_t IDSIZE = sizeof(IDARRAY) + HEADER; //Size of ID packet
 const uint8_t SETUPSIZE = 26+HEADER; //Expected size of recieved setup packet, see byte order below:
 const uint8_t COMMANDSIZE = 1+HEADER; //Commands are just one byte in length after the header
-const uint8_t NINITIALIZE = 4; //Number of times to try connecting to GUI until instead booting using default settings
+const long TIMEOUT = (long) (((1000/(float) BAUDRATE)*(64*8)) + 1000); //Wait the expected time needed to fill the serial buffer (64 bytes in size) plus a fixed delay of 0.1s to allow the GUI to respond
 
 //Setup variables
 uint8_t WARNTEMP[] = {98, 98, 98}; //warn temps, warn of overheating at 60oC (60oC = 98 on 8-bit ADC)
@@ -74,6 +75,7 @@ int a = 0; //Dummy int counter
 uint8_t counter = 0; //Dummy 8-bit counter
 boolean syncStatus = false; //Flag for tracking if actively triggering LED or in standby
 uint8_t toggleSwitch = 0; //FLag for tracking position of toggle switch - B00000000 = off, B00000100 = on
+boolean updateStatus = false;
 
 //PORT D: USB, Switches, Digital I/O
 //0 - USB RX
@@ -104,10 +106,7 @@ union //For converting between uint16_t and pair of uint8_t (to allow sending an
 // Interrupt is called once a millisecond, when no in scan sync
 SIGNAL(TIMER0_COMPA_vect) 
 {
-  PORTB |= B00100000;
-  checkStatus();// put your main code here, to run repeatedly:
-  PORTB &= B11011111;
-  taskIndex++;
+  updateStatus = true; //Set status flag to true to indicate status should be checked (1 ms has passed)
 }
 
 void setup() {
@@ -135,6 +134,7 @@ void setup() {
 
 void loop() {
   //Check event status - 1 - serial event, 2 - toggle event, 3 - failsafe event
+  if(updateStatus) checkStatus();
   if(event){
     if(event == 1) processReceivedPackets();
     if(event == 2);//----------------------------------------------------------------------------------------------------------HANDLE TOGGLE EVENT-------------------------------------------------------------------------
@@ -147,19 +147,26 @@ void initializeDevice(){
   uint8_t nTry = NINITIALIZE;
   while(Serial.available()) Serial.read(); //Flush all remaining bytes from input buffer
   while(!initialized){ //Repeat initialization until a successful initialization 
-    while(Serial.read() || !nTry){ //Keep sending header until 0 is received (no data = -1 which is "true") or counter reaches 0;
+    while(Serial.read() && nTry){ //Keep sending header until 0 is received (no data = -1 which is "true") or counter reaches 0;
       for(a=HEADER; a<IDSIZE; a++) txPacket[a] = IDARRAY[a-HEADER]; //Load ID into txPacket
       buildPacket(IDPACKET, IDSIZE); //Add header
       Serial.write(txPacket, IDSIZE); //Send assembled data packet to GUI
       packetError();
       nTry--;
     }
-    processReceivedPackets(); //If there was a successful connection, try and get the incoming setup packet
     if(!initialized && !nTry){ //If a valid setup packet was not found after n tries, use default values
       checkSetup(); //make sure default values are valid, and boot from them
+      if(initialized && NOSERIAL) Serial.end(); //If default is valid and no serial is requested in manual mode, turn off serial
       nTry = NINITIALIZE; //Reset the retry counter
     }
+    else processReceivedPackets(); //If there was a successful connection, try and get the incoming setup packet
   }
+
+  //Once initialized, turn on interrupts to begin monitoring the device
+  TIMSK0 |= _BV(OCIE0A);
+
+  //Disable serial if in manual mode and NOSERIAL is true
+  
   
   //ADCs tend to read high on reboot, so take a set of dummy reads to calibrate them
   counter = 18;
@@ -173,6 +180,7 @@ void initializeDevice(){
 
 //Index for recording current position in background tasks 0-2 - record temperatures, 3 - record knob, 4 - sync status (on/off), 5-toggle switch, 6-build header, 7-17 - send byte[n-7]
 void checkStatus(){
+  taskIndex++; //Increment task index
   if(SYNCTYPE) interrupts(); //Turn interrupts back on if in confocal mode - needed for serial communication
   if(taskIndex >= 0 && taskIndex <= 2){ //Record temperature - 12us
     analogRead(taskIndex); //Refresh ADC
@@ -187,7 +195,7 @@ void checkStatus(){
   }
   else if(taskIndex == 4){ //Perform all fast tasks as one set
     txPacket[HEADER + taskIndex++] = syncStatus;
-    txPacket[HEADER + taskIndex++] = PIND & B00000100; //Check toggle switch
+    txPacket[HEADER + taskIndex] = PIND & B00000100; //Check toggle switch
     if(txPacket[4] > FAULTTEMP[0] && txPacket[5] > FAULTTEMP[1] && txPacket[6] > FAULTTEMP[2]) event = 3; //Check whether device is overheating and enter failsafe if it is
     buildPacket(STATUSPACKET, STATUSPACKET);
   }
@@ -311,15 +319,14 @@ void setupPacket(){
 //Check setup variables to make sure they are valid before configuring the device to them
 void checkSetup(){
   for(a=0; a<3; a++){
-    if(WARNTEMP[a] >= FAULTTEMP[a] || WARNTEMP[a] > 245 || FAULTTEMP[a] > 245 || WARNTEMP < 10 || FAULTTEMP < 10) return; //Setup is not valid if set temps are at the edge of the ADC range (roughly <-25oC or >180oC for standard thermistors)
+    if(WARNTEMP[a] <= FAULTTEMP[a] || WARNTEMP[a] > 245 || FAULTTEMP[a] > 245 || WARNTEMP < 10 || FAULTTEMP < 10) return; //Setup is not valid if set temps are at the edge of the ADC range (roughly <-25oC or >180oC for standard thermistors)
   }
   //Check that packet values are valid
-  if(FANMAXTEMP > FANMINTEMP && TRIGGER < 4 && (ANALOGSEL-3) < 2 && FAULTVOLUME < 128 && STARTVOLUME < 128){ //Check numerical values for validity
+  if(FANMAXTEMP < FANMINTEMP && TRIGGER < 4 && (ANALOGSEL-3) < 2 && FAULTVOLUME < 128 && STARTVOLUME < 128){ //Check numerical values for validity
     if((!FAULTLED || FAULTLED == 4) && (!FANPIN || FANPIN == 32 || FANPIN == 64) && (!SYNCOUT || SYNCOUT == 64)){ //Check pin ID variables
       if(PWMFAN < 2 && SYNCTYPE < 2 && DTRIGGERPOL < 2 && ATRIGGERPOL < 2 && LEDSOURCE < 2 && TRIGHOLD < 2 && AWGSOURCE < 2 && SYNCOUT < 2){ //Check boolean variables
         //If setup is valid, then initialization is successful
         initialized = true;
-        TIMSK0 |= _BV(OCIE0A); //Turn on interrupts to begin monitoring the device
         SPI.end(); //End SPI so that locks on warning LED and buzzer are released
         PORTB |= FAULTLED; //Turn on warning LED
         for(a=0; a<500; a++){ //Generate tone for 0.1 seconds
@@ -359,7 +366,6 @@ void failSafe(){
     Serial.write(txPacket, COMMANDSIZE); //Send assembled data packet to computer
        
     for(a=0; a<3789; a++){ //Generate tone for 0.5 seconds
-      taskIndex++; 
       checkStatus(); 
       PORTB |= B00010000;
       delayMicroseconds(FAULTVOLUME);

@@ -240,9 +240,7 @@ public final class Pref_and_data {
 		
 		//Search entire buffer for all valid packets
 	    for(a = rxStart; a != Math.floorMod((rxIndex-HEADERLENGTH-1), rxBuffer.length); a=(a+1)%rxBuffer.length) { //Search circular buffer for packet
-System.out.println(a);
 	    	if(rxBuffer[a] == STARTBYTE) { //Search for startbyte
-System.out.println("0 found");
 	    		//Extract header bytes and convert uint8_t to int (variable & 0xFF) - https://stackoverflow.com/questions/14071361/java-how-to-parse-uint8-in-java 
 	    		packetID = rxBuffer[(a+1)%rxBuffer.length] & 0xFF; //Packet ID
 	    		packetLength = rxBuffer[(a+2)%rxBuffer.length] & 0xFF; //length of the packet
@@ -255,8 +253,7 @@ System.out.println("0 found");
 		    			packetArray[b] = rxBuffer[(b+a+HEADERLENGTH)%rxBuffer.length];
 		    			checkSum += packetArray[b] & 0xFF;
 		    		}
-		
-System.out.println("Packet ID: " + packetID + ", Packet Length: " + packetLength + ", Checksums: " + (checkSum % 256) + " " + (rxBuffer[(a+3)%rxBuffer.length] & 0xFF) + ", packet end = ");
+System.out.println("Packet ID: " + packetID + ", Packet Length: " + packetLength + ", Checksums: " + (checkSum % 256) + " " + (rxBuffer[(a+3)%rxBuffer.length] & 0xFF) + ", packet end = " + Math.floorMod((a + packetLength), rxBuffer.length) + ", buffer end = " + rxIndex);
 	        		if((checkSum % 256) == (rxBuffer[(a+3)%rxBuffer.length] & 0xFF)) { //See if checksum matches checksum in datapacket
 	        			//If checksum is valid then valid packet structure - convert packet to int array and send to GUI
 	        			packetFound = packetProcessor(packetArray, packetID);
@@ -264,6 +261,9 @@ System.out.println("Packet ID: " + packetID + ", Packet Length: " + packetLength
 	        			//Move buffer index to end of packet
 	        			rxStart = (a+packetLength)%rxBuffer.length;
 	        			a = rxStart-1;
+	        		}
+	        		else {
+System.out.println("INVALID PACKET-------------------------------------------------------------------------------------------------------------------");
 	        		}
 	    		}
 	    	}

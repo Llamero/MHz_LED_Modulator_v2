@@ -511,12 +511,9 @@ System.out.println("Starting serial..."); //Perform task here. In this case, we 
     }
     
     public void addMenuItem(String ID) {
-System.out.println(ID);
-System.out.println(serial.getPortID());
     	rbMenuItem = new JRadioButtonMenuItem(ID); 
     	rbMenuItem.setToolTipText(serial.getPortID());    	
         group.add(rbMenuItem);
-    	System.out.println(rbMenuItem); 
         connectMenu.add(rbMenuItem);
       
         
