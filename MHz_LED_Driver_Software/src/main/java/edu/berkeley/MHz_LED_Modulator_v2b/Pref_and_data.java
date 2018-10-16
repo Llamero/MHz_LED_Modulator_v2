@@ -370,8 +370,9 @@ public final class Pref_and_data {
 	    		checkSum = 0; //Initialize checksum to 0
 	    		
 	    		if(packetID > 0 && packetLength > HEADERLENGTH && Math.floorMod((rxIndex - a), rxBuffer.length) >= packetLength) { //Verify that ID and length are valid, and packet fits in remainder of buffer (i.e. is not a fragment)
-	    			
-		    		//Copy putative packet starting at end of header and calculate the checksum
+	    			packetArray = new byte[packetLength-HEADERLENGTH]; //Resize packet array to match size of packet
+		    		
+	    			//Copy putative packet starting at end of header and calculate the checksum
 		    		for(b=0; b<(packetLength-HEADERLENGTH); b++){
 		    			packetArray[b] = rxBuffer[(b+a+HEADERLENGTH)%rxBuffer.length];
 		    			checkSum += packetArray[b] & 0xFF;
@@ -379,6 +380,7 @@ public final class Pref_and_data {
 System.out.println("Packet ID: " + packetID + ", Packet Length: " + packetLength + ", Checksums: " + (checkSum % 256) + " " + (rxBuffer[(a+3)%rxBuffer.length] & 0xFF) + ", packet end = " + Math.floorMod((a + packetLength), rxBuffer.length) + ", buffer end = " + rxIndex);
 	        		if((checkSum % 256) == (rxBuffer[(a+3)%rxBuffer.length] & 0xFF)) { //See if checksum matches checksum in datapacket
 	        			//If checksum is valid then valid packet structure - convert packet to int array and send to GUI
+	        			packetFound = false;
 	        			packetFound = packetProcessor(packetArray, packetID);
 	        			
 	        			//Move buffer start index to end of packet
@@ -410,20 +412,13 @@ System.out.println("INVALID PACKET----------------------------------------------
 	
 	public boolean packetProcessor(byte[] packet, int packetID) {
 		switch (packetID) {
-			case IDPACKET: updateID(packet);
-				return true;
-			case STATUSPACKET: updateStatus(packet);
-				return true;
-			case FAULTPACKET: updateFault(packet);
-				return true;
-			case RESETPACKET: sendReset(packet);
-				return true;
-			case DISCONNECTPACKET: sendDisconnect(packet);
-				return true;
-			case SETUPPACKET: confirmSetup(packet);
-				return true;
-			case WAVEPACKET: updateWave(packet);
-				return true;
+			case IDPACKET: return updateID(packet);
+			case STATUSPACKET: return updateStatus(packet);
+			case FAULTPACKET: return updateFault(packet);
+			case RESETPACKET: return sendReset(packet);
+			case DISCONNECTPACKET: return sendDisconnect(packet);
+			case SETUPPACKET: return confirmSetup(packet);
+			case WAVEPACKET: return updateWave(packet);
 			default: return false; // If the packet ID is invalid, return false
 		}
     }
@@ -432,17 +427,20 @@ System.out.println("INVALID PACKET----------------------------------------------
 		initializeComplete = true;
 	}
 ///////////////////////////////////////////////////ID//////////////////////////////////////////////////////////////////////////////////////////	
-	private void updateID(byte[] packetArray) {
+	private boolean updateID(byte[] packetArray) {
     	//Only add to menu during initialization
     	if(!initializeComplete) {
+System.out.println("ID Buffer: " + Arrays.toString(packetArray));
     		String ID = new String(packetArray);
     		gui.addMenuItem(ID);
 System.out.println(ID);
+    		return true;
     	}
     	else { //Otherwise, ID packet means device is now connected, so send and verify prefs, then adjust serial speed to live update rate    		
 System.out.println(new String(packetArray)); 
 			serial.setSerialDelay(runReadWait, runSendWait); //Speed up streaming now that initialization is complete
     		sendPreferencePacket();
+    		return true;
     	}
     }
 	
@@ -499,37 +497,38 @@ System.out.println(new String(packetArray));
 	}
 	
 	//Verify the setup of the driver
-	private void confirmSetup(byte[] packetArray) {
-		boolean confirm = false;		
-		//verify each setup parameter against the packet
-		if(packetLength == SETUPPACKET + HEADERLENGTH) {
-			for(int a=0; a<SETUPPACKET; a++) {
-				System.out.println(packetArray[a] + " " + preferencePacket[a+HEADERLENGTH]);
-				if(packetArray[a] == preferencePacket[a+HEADERLENGTH]) confirm = true;
-				else confirm = false;
+	private boolean confirmSetup(byte[] packetArray) {
+		if(initializeComplete) {
+			boolean confirm = false;		
+			//verify each setup parameter against the packet
+			if(packetLength == SETUPPACKET + HEADERLENGTH) {
+				for(int a=0; a<SETUPPACKET; a++) {
+					System.out.println(packetArray[a] + " " + preferencePacket[a+HEADERLENGTH]);
+					if(packetArray[a] == preferencePacket[a+HEADERLENGTH]) confirm = true;
+					else confirm = false;
+				}
 			}
-		}
-		
-		//If packet is invalid, reset the arduino and retry connection;
-		if(!confirm) {
-			if(connectCount++ < CONNECTRETRY) {
-				int progress = (int) Math.round(100D*((double) connectCount/(double) CONNECTRETRY));
-				String message = "Re-connection attempt: " + connectCount + " of " + CONNECTRETRY;
-				serial.connectDevice(gui.getGroup());
+			
+			//If packet is invalid, reset the arduino and retry connection;
+			if(!confirm) {
+				if(connectCount++ < CONNECTRETRY) {
+					int progress = (int) Math.round(100D*((double) connectCount/(double) CONNECTRETRY));
+					String message = "Re-connection attempt: " + connectCount + " of " + CONNECTRETRY;
+					serial.connectDevice(gui.getGroup());
+				}
+				else {
+					serial.disconnect();
+				}
 			}
-			else {
-				serial.disconnect();
-			}
+			return confirm;
 		}
-		//Otherwise, boot is complete, and setup serial for live streaming refresh rates
-		else {
-		}
+		else return false;
 	}
 //////////////////////////////////////STATUS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    public void updateStatus(byte[] packetArray) {
+    public boolean updateStatus(byte[] packetArray) {
     	//Only read packet if device is initialized
     	if(initializeComplete) {
-    		
+System.out.println("Status Buffer: " + Arrays.toString(packetArray));    		
     		//Extract temperature bytes and convert to double
     		for(int a=0; a<newTemp.length; a++) {
     			double temp = ADCtoCelcius(packetArray[a], a); //Convert ADC reading to temperature in oC
@@ -560,20 +559,14 @@ System.out.println(new String(packetArray));
 	       	boolean toggleState = packetArray[1]!=0; //Convert byte to boolean
 	       	if(toggleState^currentToggle) { // ^ = XOR - only if values are unequal returns true
 	       		currentToggle = toggleState;
-	       	}   	
+	       	}
+	       	return true;
     	}
+    	else return false;
     }
 	
 //////////////////////////////////////TEMPERATURE//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
 	
-   public void updateTemp(byte[] packetArray) {
-    	//Only read packet if device is initialized
-    	if(initializeComplete) {
-    		
-
-    	}
-    }
-    
     private double ADCtoCelcius(byte adcByte, int a) {
     	double adcDouble = (double) (adcByte & 0xFF); //Convert unsigned byte to double
     	double conversion = INITIALTEMP; //Initialize temp to impossible value to flag if conversion was not done
@@ -607,16 +600,16 @@ System.out.println(new String(packetArray));
     	return adcByte;
     }
 ///////////////////////////////////////WAVE///////////////////////////////////////////////////////////////////////////////////////////////////
-    private void updateFault(byte[] packetArray) {
-    	
+    private boolean updateFault(byte[] packetArray) {
+    	return false;
     }
-    private void sendReset(byte[] packetArray) {
-    	
+    private boolean sendReset(byte[] packetArray) {
+    	return false;
     }
-    private void sendDisconnect(byte[] packetArray) {
-    	
+    private boolean sendDisconnect(byte[] packetArray) {
+    	return false;
     }
-    private void updateWave(byte[] packetArray) {
-    	
+    private boolean updateWave(byte[] packetArray) {
+    	return false;
     }
 }
