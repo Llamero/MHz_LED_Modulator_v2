@@ -524,6 +524,10 @@ System.out.println("Starting serial..."); //Perform task here. In this case, we 
         });
     }
     
+    public ButtonGroup getGroup() {
+    	return group;
+    }
+    
     public void setConstants(double[] minTemp, double[] warnTemp, double[] faultTemp, double[] defaultTemp, String[] togglePositions, double defaultAngle, double DEFAULTPERCENT) {
     	this.MINTEMP = minTemp;
     	this.WARNTEMP = warnTemp;

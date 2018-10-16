@@ -23,8 +23,6 @@ public final class Serial {
     private int readLength = 0; //Number of bytes in most recent load of rx serial buffer
     private boolean arduinoConnect = false; //Whether the GUI if currently connected to a driver
     private int nArduino = 0; //Number of Arduino devices found connected to computer
-    private boolean initializeComplete = false; //Identifies if initial startup was complete (prevents things like IDs to be rewritten in connection menu)
-    private boolean packetFound = false; //Flag for whether a valid packet was found in the buffer
 	private GUI_temp_and_panel gui; //Instance of GUI so display can be updated
 	private Pref_and_data data; //Instance of controller so events can be passed back to controller
 	private int BAUDRATE; //Baud rate for serial connection
@@ -83,16 +81,16 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
     	disconnect();
         
         Iterable<AbstractButton> arl = Collections.list(group.getElements()); //Create a list of buttons in connect menu
-        for(AbstractButton ab:arl){
+        for(AbstractButton ab:arl){ //Find which radio button is selected
             if(ab.isSelected()){
-                for(SerialPort b:serialPorts){ //Search all COM ports for on that matches radioButton (using toolTipText which contains COM port name)
+                for(SerialPort b:serialPorts){ //Search all COM ports for one that matches active radioButton (using toolTipText which contains COM port name)
                     if(ab.getToolTipText().equals(b.getDescriptivePortName())){
                         System.out.println(b.getDescriptivePortName() + random());
                         arduinoPort = b;
                         arduinoPort.setBaudRate(BAUDRATE);
                         arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, INITIALREADWAIT, INITIALSENDWAIT); //Blocking means wait the full 2000ms to catch the set number of bytes
                         arduinoPort.openPort(); //Connect to matching port if found
-                        arduinoConnect = readSerial(); //Perform handshake and send prefs to Arduino since it will have reset
+                        readSerial(); //Perform handshake and send prefs to Arduino since it will have reset
                         
                         //Add a data listener to the port to catch any incoming packets
                         arduinoPort.addDataListener(new SerialPortDataListener() {
@@ -129,21 +127,19 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
     
     
     //Read serial data and load it into a circular buffer
-    private boolean readSerial(){
-    	packetFound = false; //Reset pack found flag
+    private void readSerial(){
         readLength = arduinoPort.readBytes(readBuffer, readBuffer.length);
         //If minimal packet size is received then verify contents
 		if(readLength > HEADERLENGTH) {
-			packetFound = data.parseSerial(readBuffer, readLength);
 System.out.println("Buffer: " + Arrays.toString(readBuffer));
+			arduinoConnect = true; //Set connect flag to true if valid data is received
+			data.parseSerial(readBuffer, readLength);
 		}
-		return packetFound;
     }
     
     public void reply(byte[] reply) {
     	//writes the entire string at once.
 		arduinoPort.writeBytes(reply, reply.length);
-		System.out.println(packetFound + " " + initializeComplete);
     }
     
     public String getPortID() {

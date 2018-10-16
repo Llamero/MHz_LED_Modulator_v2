@@ -1,6 +1,6 @@
 package edu.berkeley.MHz_LED_Modulator_v2b;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.prefs.Preferences;
 
@@ -15,6 +15,10 @@ public final class Pref_and_data {
 	private static final double DEFAULTPERCENT = -100; //Value flags dial as N/A
 	private static final double DEFAULTANGLE = 270; //Default angle for dial - position dial takes when not connected
 	private static final String[] TOGGLEPOSITIONS = {"Manual", "Auto"}; //Names of positions for toggle switch
+	private static final byte FAULTLED = 4; //Alarm to alert to warning temperature (0=false, 4=true) 
+	private static final byte FAULTVOLUME = 127; //Volume of alarm to alert to fault temperature (0 = min, 127 = max);
+	private static final byte STARTVOLUME = 10; //Volume of short tone upon initializing (0 = min, 127 = max);
+	
 	//Temperature
 	private static final double[] MINTEMP = {10, 10, 10}; //Minimum temperature for GUI thermometers - 0-input, 1-output, 2-external
 	private static final double[] WARNTEMP = {50, 50, 50}; //Temperature at which overheat warning starts - also temp that device has to recover to before turning back on after fault - 0-input, 1-output, 2-external
@@ -29,6 +33,11 @@ public final class Pref_and_data {
     private static final double DIALHISTORESIS = 0.5; //How much knob has to change to refresh display (in percent)
     private static final double SERIESR = 4700; //Value in ohms of resistor in series with thermistors
     private static final int ADCMIN = 2; //Minimum valid value on raw temp ADC readings - noise floor on readings that should be 0
+    private static final int FANMINTEMP = 140; //LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
+    private static final int FANMAXTEMP = 118; //LED temp above which the PWM fan runs at maximum speed, - default to warn temp  
+    private static final int PWMFAN = 0; //Digital I/O as PWM fan controller (0=N/A, 1=on)
+    private static final int FANPIN = 0; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
+    
     //Serial
     private static final byte STARTBYTE = 0; //Identifies start of packet
     private static final int BAUDRATE = 250000; //Baud rate of serial communication
@@ -43,7 +52,25 @@ public final class Pref_and_data {
     private static final int FAULTPACKET = 10; //Identifies packet as command that driver is in fault, or to command driver to enter fault (i.e. fault test)
     private static final int RESETPACKET = 11; //Command to driver to move to first line of code (address 0) - soft restart
     private static final int DISCONNECTPACKET = 12; //Command to driver to enter disconnect status
+    private static final int SETUPPACKET = 28; //Identifies packet as receiving setup configuration information - also is number of data bytes in packet
     private static final int WAVEPACKET = HEADERLENGTH + 250; //Identifies packet as recorded analog waveform
+    private static final int CONNECTRETRY = 3; //Number of times to retry a connection to a driver before disconnecting - needs to be less than Arduino retry
+    
+    //Sync:
+    private static final int ONDELAY = 0; //Delay from previous event before LED is turned on
+    private static final int OFFDELAY = 0; //Delay from previous event before LED is turned off
+    private static final int DELAYORDER = 0; //Order of delays before trigger (0 = LED starts off, 1 = LED starts on);
+    private static final int DELAYUNITS = 0; //us or ms delay - confocal sync will always use us - us is also capped at 16383.
+    private static final int TRIGGER = 0; //trigger (0=toggle, 1=analog, 2=digital, 3=digital activates analog - such as shutter open then trigger off of fast mirror)
+    private static final int ANALOGSEL = 3; //(analog select (3 = diode, 4 = raw) 
+    private static final int SYNCTYPE = 0; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
+    private static final int DTRIGGERPOL = 0; //digital trigger polarity (0 = High, 1 = Low)
+    private static final int ATRIGGERPOL = 0; //analog trigger polarity (0 = Rising, 1 = Falling)
+    private static final int LEDSOURCE = 0; //LED intensity signal source (0 = Ext source, 1 = AWG source)
+    private static final int TRIGHOLD = 0; //trigger hold (0 = single shot, 1 = repeat until trigger resets),
+    private static final int AWGSOURCE = 0; //AWG source (0=rxPacket, 1=mirror the intensity knob),  
+    private static final int SYNCOUT = 0; //Digital I/O 2 as sync out (0=false, 64=true),
+    
     //--Standard packets
 	private static final byte[] DISCONNECTPACKETARRAY = new byte[] {STARTBYTE, DISCONNECTPACKET, HEADERLENGTH+1, DISCONNECTPACKET, DISCONNECTPACKET};   
     
@@ -54,6 +81,9 @@ public final class Pref_and_data {
     private static final String ANGLEID = "Dial Angle";
     private static final String TOGGLE0ID = "Toggle 0";
     private static final String TOGGLE1ID = "Toggle 1";
+    private static final String FAULTLEDID = "Fault LED";
+    private static final String FAULTVOLUMEID = "Fault Volume";
+    private static final String STARTVOLUMEID = "Start Volume";
     //Temperature
     private static final String MINID = "Minimum Temp";
     private static final String WARNID = "Warning Temp";
@@ -65,6 +95,10 @@ public final class Pref_and_data {
     private static final String THISTID = "Temp Historesis";
     private static final String DHISTID = "Dial Historesis";
     private static final String ADCMINID = "Minimum ADC";
+    private static final String FANMINTEMPID = "Fan min temp";
+    private static final String FANMAXTEMPID = "Fan max temp";
+    private static final String PWMFANID = "Fan output";
+    private static final String FANPINID = "Fan pin";
     //Serial
     private static final String BAUDID = "Baud rate";
     private static final String PORTID = "Preferred port";
@@ -72,11 +106,26 @@ public final class Pref_and_data {
 	private static final String INITIALSENDWAITID = "Initial send wait"; 
 	private static final String RUNREADWAITID = "Run read wait";
 	private static final String RUNSENDWAITID = "Run send wait"; 
+    //Sync:
+    private static final String ONDELAYID = "On delay";
+    private static final String OFFDELAYID = "Off delay";
+    private static final String DELAYORDERID = "Delay order";
+    private static final String DELAYUNITSID = "Delay units";
+    private static final String TRIGGERID = "Trigger type";
+    private static final String ANALOGSELID = "Analog input pin";
+    private static final String SYNCTYPEID = "Sync type";
+    private static final String DTRIGGERPOLID = "Digital polarity";
+    private static final String ATRIGGERPOLID = "Analog polarity";
+    private static final String LEDSOURCEID = "LED input";
+    private static final String TRIGHOLDID = "Trigger hold";
+    private static final String AWGSOURCEID = "AWG Source";
+    private static final String SYNCOUTID = "Sync output";
     
     //Initialize variables to store model data
 	private GUI_temp_and_panel gui; //Instance of GUI so display can be updated
 	private Serial serial; //Instance of serial port communication
     private boolean initializeComplete; //State of initialization of connection
+    
     //Panel variables
 	private double currentPercent; //Position of dial in percent currently displayed on GUI
 	private double newPercent; //Most recent recorded position of dial in percent
@@ -86,6 +135,9 @@ public final class Pref_and_data {
 	private double dialOffset; //Offset of line fitted to dial angle vs. dial percent
 	private String[] togglePositions = new String[2]; //Stores names of toggle positions
 	private boolean currentToggle; //Current position of toggle switch
+	private int faultLED; //Alarm to alert to warning temperature (0=false, 4=true) 
+	private int faultVolume; //Volume of alarm to alert to fault temperature (0 = min, 127 = max);
+	private int startVolume; //Volume of short tone upon initializing (0 = min, 127 = max);
     //Temperature variables
 	private double[] minTemp; //Minimum temperature for GUI thermometers - 0-input, 1-output, 2-external
 	private double[] warnTemp; //Temperature at which overheat warning starts - this is also max temp for gui thermometers - 0-input, 1-output, 2-external
@@ -99,6 +151,10 @@ public final class Pref_and_data {
     private double tHist; //How much temperature has to change to refresh display (in degrees C)
     private double dHist; //How much knob has to change to refresh display (in percent)
     private int adcMin; //Minimum valid value on raw temp ADC readings - noise floor on readings that should be 0
+    private int fanMinTemp; //LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
+    private int fanMaxTemp; //LED temp above which the PWM fan runs at maximum speed, - default to warn temp  
+    private int pwmFan; //Digital I/O as PWM fan controller (0=N/A, 1=on)
+    private int fanPin; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
     //Serial variables
     private int baudRate; //Baud rate of serial communication
     private String preferredPort; //String containing name of preferred port (not port object itself)
@@ -113,8 +169,23 @@ public final class Pref_and_data {
 	private int runSendWait; //Time to wait for sending entire packet
 	private int rxStart = 0; //Index for start of packet in rx buffer
 	private int rxIndex = 0; //Current position 
-	private int rxEnd = 0; //Index for placing next received byte in the rx circular buffer
 	private byte[] rxBuffer = new byte[1024]; //Circular buffer for storing the rx serial stream
+	private byte[] preferencePacket = new byte[SETUPPACKET+HEADERLENGTH]; //Array for storing the prefence packet to check against driver version
+	private int connectCount = 0; //Number of attempts at connecting to driver
+    //Sync:
+    private int onDelay; //Delay from previous event before LED is turned on
+    private int offDelay; //Delay from previous event before LED is turned off
+    private int delayOrder; //Order of delays before trigger (0 = LED starts off, 1 = LED starts on);
+    private int delayUnits; //us or ms delay - confocal sync will always use us - us is also capped at 16383.
+    private int trigger; //trigger (0=toggle, 1=analog, 2=digital, 3=digital activates analog - such as shutter open then trigger off of fast mirror)
+    private int analogSel; //(analog select (3 = diode, 4 = raw) 
+    private int syncType; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
+    private int dTriggerPol; //digital trigger polarity (0 = High, 1 = Low)
+    private int aTriggerPol; //analog trigger polarity (0 = Rising, 1 = Falling)
+    private int ledSource; //LED intensity signal source (0 = Ext source, 1 = AWG source)
+    private int trigHold; //trigger hold (0 = single shot, 1 = repeat until trigger resets),
+    private int awgSource; //AWG source (0=rxPacket, 1=mirror the intensity knob),   
+    private int syncOut; //Digital I/O 2 as sync out (0=false, 64=true),
 	
 
 	//Initialize a preferences file in the model class - this will allow user settings to be saved and loaded when program loads
@@ -152,7 +223,10 @@ public final class Pref_and_data {
 		newPercent = DEFAULTPERCENT;
 		togglePositions[0] = prefs.get(TOGGLE0ID, TOGGLEPOSITIONS[0]);
 		togglePositions[1] = prefs.get(TOGGLE1ID, TOGGLEPOSITIONS[1]);
-		
+		faultLED = prefs.getInt(FAULTLEDID, FAULTLED);
+		faultVolume = prefs.getInt(FAULTVOLUMEID, FAULTVOLUME);
+		startVolume = prefs.getInt(STARTVOLUMEID, STARTVOLUME);
+
 		//Temperature
 		minTemp = stringToDoubleArray(prefs.get(MINID, doubleArrayToString(MINTEMP)));
 		warnTemp = stringToDoubleArray(prefs.get(WARNID, doubleArrayToString(WARNTEMP)));
@@ -166,6 +240,10 @@ public final class Pref_and_data {
 		tHist = prefs.getDouble(THISTID, TEMPHISTORESIS);
 		dHist = prefs.getDouble(DHISTID, DIALHISTORESIS);
 		adcMin = prefs.getInt(ADCMINID, ADCMIN);
+	    fanMinTemp = prefs.getInt(FANMINTEMPID, FANMINTEMP); 
+	    fanMaxTemp = prefs.getInt(FANMAXTEMPID, FANMAXTEMP); 
+	    pwmFan = prefs.getInt(PWMFANID, PWMFAN); 
+	    fanPin = prefs.getInt(FANPINID, FANPIN); 
 		
 		//Serial
 		baudRate = prefs.getInt(BAUDID, BAUDRATE);
@@ -174,6 +252,21 @@ public final class Pref_and_data {
 		initialSendWait = prefs.getInt(INITIALSENDWAITID, INITIALSENDWAIT);
 		runReadWait = prefs.getInt(RUNREADWAITID, RUNREADWAIT);
 		runSendWait = prefs.getInt(RUNSENDWAITID, RUNSENDWAIT);
+		
+	    //Sync:
+	    onDelay = prefs.getInt(ONDELAYID, ONDELAY);
+	    offDelay = prefs.getInt(OFFDELAYID, OFFDELAY);
+	    delayOrder = prefs.getInt(DELAYORDERID, DELAYORDER);
+	    delayUnits = prefs.getInt(DELAYUNITSID, DELAYUNITS);
+	    trigger = prefs.getInt(TRIGGERID, TRIGGER);
+	    analogSel = prefs.getInt(ANALOGSELID, ANALOGSEL);
+	    syncType = prefs.getInt(SYNCTYPEID, SYNCTYPE);
+	    dTriggerPol = prefs.getInt(DTRIGGERPOLID, DTRIGGERPOL);
+	    aTriggerPol = prefs.getInt(ATRIGGERPOLID, ATRIGGERPOL);
+	    ledSource = prefs.getInt(LEDSOURCEID, LEDSOURCE);
+	    trigHold = prefs.getInt(TRIGHOLDID, TRIGHOLD);
+	    awgSource = prefs.getInt(AWGSOURCEID, AWGSOURCE);
+	    syncOut = prefs.getInt(SYNCOUTID, SYNCOUT);	
 	}
 	
 	public void restoreDefaults() {
@@ -182,13 +275,21 @@ public final class Pref_and_data {
 		prefs.putDouble(SLOPEID, DEFAULTSLOPE);
 		prefs.putDouble(OFFSETID, DEFAULTOFFSET);
 		prefs.putDouble(ANGLEID, DEFAULTANGLE);
+		prefs.putDouble(ANGLEID, DEFAULTANGLE);
+		currentPercent = DEFAULTPERCENT;
+		newPercent = DEFAULTPERCENT;
 		prefs.put(TOGGLE0ID, TOGGLEPOSITIONS[0]);
 		prefs.put(TOGGLE1ID, TOGGLEPOSITIONS[1]);
-		
+		prefs.putInt(FAULTLEDID, FAULTLED);
+		prefs.putInt(FAULTVOLUMEID, FAULTVOLUME);
+		prefs.putInt(STARTVOLUMEID, STARTVOLUME);
+
 		//Temperature
 		prefs.put(MINID, doubleArrayToString(MINTEMP));
 		prefs.put(WARNID, doubleArrayToString(WARNTEMP));
 		prefs.put(FAULTID, doubleArrayToString(FAULTTEMP));
+		currentTemp = DEFAULTTEMP; //Initialize temp readings to impossible default to flag that no recording has been made
+		newTemp = DEFAULTTEMP;
 		prefs.put(BETAID, doubleArrayToString(DEFAULTBETA));
 		prefs.put(ROID, doubleArrayToString(DEFAULTRO));
 		prefs.put(TOID, doubleArrayToString(DEFAULTTO));
@@ -196,6 +297,10 @@ public final class Pref_and_data {
 		prefs.putDouble(THISTID, TEMPHISTORESIS);
 		prefs.putDouble(DHISTID, DIALHISTORESIS);
 		prefs.putInt(ADCMINID, ADCMIN);
+		prefs.putInt(FANMINTEMPID, FANMINTEMP); 
+		prefs.putInt(FANMAXTEMPID, FANMAXTEMP); 
+		prefs.putInt(PWMFANID, PWMFAN); 
+		prefs.putInt(FANPINID, FANPIN); 
 		
 		//Serial
 		prefs.putInt(BAUDID, BAUDRATE);
@@ -204,6 +309,21 @@ public final class Pref_and_data {
 		prefs.putInt(INITIALSENDWAITID, INITIALSENDWAIT);
 		prefs.putInt(RUNREADWAITID, RUNREADWAIT);
 		prefs.putInt(RUNSENDWAITID, RUNSENDWAIT);
+		
+	    //Sync:
+		prefs.putInt(ONDELAYID, ONDELAY);
+		prefs.putInt(OFFDELAYID, OFFDELAY);
+		prefs.putInt(DELAYORDERID, DELAYORDER);
+		prefs.putInt(DELAYUNITSID, DELAYUNITS);
+		prefs.putInt(TRIGGERID, TRIGGER);
+		prefs.putInt(ANALOGSELID, ANALOGSEL);
+		prefs.putInt(SYNCTYPEID, SYNCTYPE);
+		prefs.putInt(DTRIGGERPOLID, DTRIGGERPOL);
+		prefs.putInt(ATRIGGERPOLID, ATRIGGERPOL);
+		prefs.putInt(LEDSOURCEID, LEDSOURCE);
+		prefs.putInt(TRIGHOLDID, TRIGHOLD);
+		prefs.putInt(AWGSOURCEID, AWGSOURCE);
+		prefs.putInt(SYNCOUTID, SYNCOUT);	
 		
 		//Re-initialize to enact default values
 		initialize();
@@ -241,7 +361,8 @@ public final class Pref_and_data {
 		}
 		
 		//Search entire buffer for all valid packets
-	    for(a = rxStart; a != Math.floorMod((rxIndex-HEADERLENGTH-1), rxBuffer.length); a=(a+1)%rxBuffer.length) { //Search circular buffer for packet
+	    for(a = rxStart; a != Math.floorMod(rxIndex, rxBuffer.length); a=(a+1)%rxBuffer.length) { //Search circular buffer for packet
+	    	System.out.println(a + " " + Math.floorMod((rxIndex-HEADERLENGTH-1), rxBuffer.length));
 	    	if(rxBuffer[a] == STARTBYTE) { //Search for startbyte
 	    		//Extract header bytes and convert uint8_t to int (variable & 0xFF) - https://stackoverflow.com/questions/14071361/java-how-to-parse-uint8-in-java 
 	    		packetID = rxBuffer[(a+1)%rxBuffer.length] & 0xFF; //Packet ID
@@ -260,9 +381,11 @@ System.out.println("Packet ID: " + packetID + ", Packet Length: " + packetLength
 	        			//If checksum is valid then valid packet structure - convert packet to int array and send to GUI
 	        			packetFound = packetProcessor(packetArray, packetID);
 	        			
-	        			//Move buffer index to end of packet
-	        			rxStart = (a+packetLength)%rxBuffer.length;
-	        			a = rxStart-1;
+	        			//Move buffer start index to end of packet
+	        			if(packetFound) {
+		        			rxStart = (a+packetLength)%rxBuffer.length;
+		        			a = rxStart-1;
+	        			}
 	        		}
 	        		else {
 System.out.println("INVALID PACKET-------------------------------------------------------------------------------------------------------------------");
@@ -296,7 +419,9 @@ System.out.println("INVALID PACKET----------------------------------------------
 			case RESETPACKET: sendReset(packet);
 				return true;
 			case DISCONNECTPACKET: sendDisconnect(packet);
-				return true;			
+				return true;
+			case SETUPPACKET: confirmSetup(packet);
+				return true;
 			case WAVEPACKET: updateWave(packet);
 				return true;
 			default: return false; // If the packet ID is invalid, return false
@@ -315,9 +440,91 @@ System.out.println("INVALID PACKET----------------------------------------------
 System.out.println(ID);
     	}
     	else { //Otherwise, ID packet means device is now connected, so send and verify prefs, then adjust serial speed to live update rate    		
-    		serial.setSerialDelay(runReadWait, runSendWait);
+System.out.println(new String(packetArray)); 
+			serial.setSerialDelay(runReadWait, runSendWait); //Speed up streaming now that initialization is complete
+    		sendPreferencePacket();
     	}
     }
+	
+	private void sendPreferencePacket() {
+		//Send single STARTBYTE to confirm receipt of ID and start of SETUP transfer
+		serial.reply(new byte[] {STARTBYTE});
+		
+		byte[] onDelayArray = ByteBuffer.allocate(4).putInt(onDelay).array();
+		byte[] offDelayArray = ByteBuffer.allocate(4).putInt(offDelay).array();
+		connectCount = 0; //Reset the counter for number of reconnect attempts
+		
+		preferencePacket = new byte[] {
+			STARTBYTE,
+			SETUPPACKET,
+			SETUPPACKET+HEADERLENGTH,
+			STARTBYTE, //Place holder for checksum - will be calculated after rest of packet is assembled
+			CelciustoADC(WARNTEMP[0], 0),
+			CelciustoADC(WARNTEMP[1], 1),
+			CelciustoADC(WARNTEMP[2], 2),
+			CelciustoADC(FAULTTEMP[0], 0),
+			CelciustoADC(FAULTTEMP[1], 1),
+			CelciustoADC(FAULTTEMP[2], 2),
+			onDelayArray[2],
+			onDelayArray[3],
+			offDelayArray[2],
+			offDelayArray[3],
+			(byte) delayOrder,
+			(byte) delayUnits,
+			(byte) fanMinTemp,
+			(byte) fanMaxTemp,
+			(byte) trigger,
+			(byte) analogSel,
+			(byte) faultLED,
+			(byte) faultVolume,
+			(byte) startVolume,
+			(byte) pwmFan,
+			(byte) fanPin,
+			(byte) syncType,
+			(byte) dTriggerPol,
+			(byte) aTriggerPol,
+			(byte) ledSource,
+			(byte) trigHold,
+			(byte) awgSource,
+			(byte) syncOut
+		};
+	
+		//Calculate checksum of packet
+		checkSum = 0;
+		for(int a = HEADERLENGTH; a<preferencePacket.length; a++) checkSum += preferencePacket[a] & 0xFF; 
+		preferencePacket[3] = (byte) checkSum;
+
+		//Send setup packet
+		serial.reply(preferencePacket);
+	}
+	
+	//Verify the setup of the driver
+	private void confirmSetup(byte[] packetArray) {
+		boolean confirm = false;		
+		//verify each setup parameter against the packet
+		if(packetLength == SETUPPACKET + HEADERLENGTH) {
+			for(int a=0; a<SETUPPACKET; a++) {
+				System.out.println(packetArray[a] + " " + preferencePacket[a+HEADERLENGTH]);
+				if(packetArray[a] == preferencePacket[a+HEADERLENGTH]) confirm = true;
+				else confirm = false;
+			}
+		}
+		
+		//If packet is invalid, reset the arduino and retry connection;
+		if(!confirm) {
+			if(connectCount++ < CONNECTRETRY) {
+				int progress = (int) Math.round(100D*((double) connectCount/(double) CONNECTRETRY));
+				String message = "Re-connection attempt: " + connectCount + " of " + CONNECTRETRY;
+				serial.connectDevice(gui.getGroup());
+			}
+			else {
+				serial.disconnect();
+			}
+		}
+		//Otherwise, boot is complete, and setup serial for live streaming refresh rates
+		else {
+		}
+	}
 //////////////////////////////////////STATUS////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     public void updateStatus(byte[] packetArray) {
     	//Only read packet if device is initialized
@@ -382,6 +589,22 @@ System.out.println(ID);
 	    	conversion -= 273.15D;
     	}
      	return conversion;
+    }
+    
+    private byte CelciustoADC(double temp, int a) {
+    	byte adcByte = 0;
+    	
+    	temp += 273.15;
+    	temp = 1D/temp;
+    	temp -= 1D/(To[a]+273.15D);
+    	temp *= beta[a];
+    	temp = Math.exp(temp);
+    	temp *= Ro[a];
+    	temp = temp*255/(SERIESR+temp);
+        adcByte = (byte) Math.round(temp);
+    	 
+    	
+    	return adcByte;
     }
 ///////////////////////////////////////WAVE///////////////////////////////////////////////////////////////////////////////////////////////////
     private void updateFault(byte[] packetArray) {
