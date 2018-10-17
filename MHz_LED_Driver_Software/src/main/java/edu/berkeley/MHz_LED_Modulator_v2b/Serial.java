@@ -79,7 +79,6 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
     
     public void connectDevice(ButtonGroup group){
     	disconnect();
-        
         Iterable<AbstractButton> arl = Collections.list(group.getElements()); //Create a list of buttons in connect menu
         for(AbstractButton ab:arl){ //Find which radio button is selected
             if(ab.isSelected()){
@@ -103,6 +102,7 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
                     	   }
                         });
                         gui.updateProgress(0, "Connected to: " + ab.getText());
+                        arduinoConnect = true;
                         break;
                     }
                 }

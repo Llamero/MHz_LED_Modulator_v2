@@ -32,11 +32,12 @@ public final class Pref_and_data {
     private static final double TEMPHISTORESIS = 0.5; //How much temperature has to change to refresh display (in degrees C)
     private static final double DIALHISTORESIS = 0.5; //How much knob has to change to refresh display (in percent)
     private static final double SERIESR = 4700; //Value in ohms of resistor in series with thermistors
-    private static final int ADCMIN = 2; //Minimum valid value on raw temp ADC readings - noise floor on readings that should be 0
+    private static final int ADCMIN = 250; //Maximum valid value on raw temp ADC readings - equal to -40oC
     private static final int FANMINTEMP = 140; //LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
     private static final int FANMAXTEMP = 118; //LED temp above which the PWM fan runs at maximum speed, - default to warn temp  
     private static final int PWMFAN = 0; //Digital I/O as PWM fan controller (0=N/A, 1=on)
     private static final int FANPIN = 0; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
+	private static final double[] DEFAULTSTATUS = new double[] {INITIALTEMP,INITIALTEMP,INITIALTEMP,DEFAULTPERCENT, DEFAULTANGLE, -1,-1}; //Initialize status array to impossible values
     
     //Serial
     private static final byte STARTBYTE = 0; //Identifies start of packet
@@ -125,6 +126,7 @@ public final class Pref_and_data {
 	private GUI_temp_and_panel gui; //Instance of GUI so display can be updated
 	private Serial serial; //Instance of serial port communication
     private boolean initializeComplete; //State of initialization of connection
+    private double[] statusArray = DEFAULTSTATUS; //Initialize status array to impossible values
     
     //Panel variables
 	private double currentPercent; //Position of dial in percent currently displayed on GUI
@@ -203,7 +205,7 @@ public final class Pref_and_data {
     }
     
     public void shareConstants() {
-    	gui.setConstants(minTemp, warnTemp, faultTemp, DEFAULTTEMP, TOGGLEPOSITIONS, defaultAngle, DEFAULTPERCENT);
+    	gui.setConstants(minTemp, warnTemp, faultTemp, DEFAULTTEMP, TOGGLEPOSITIONS, defaultAngle, DEFAULTPERCENT, DEFAULTSTATUS);
     	serial.setConstants(baudRate, preferredPort, initialReadWait, initialSendWait, HEADERLENGTH, DISCONNECTPACKETARRAY);
     }
 //    public void setControllerConstants() {
@@ -228,6 +230,7 @@ public final class Pref_and_data {
 		startVolume = prefs.getInt(STARTVOLUMEID, STARTVOLUME);
 
 		//Temperature
+		statusArray = DEFAULTSTATUS;
 		minTemp = stringToDoubleArray(prefs.get(MINID, doubleArrayToString(MINTEMP)));
 		warnTemp = stringToDoubleArray(prefs.get(WARNID, doubleArrayToString(WARNTEMP)));
 		faultTemp = stringToDoubleArray(prefs.get(FAULTID, doubleArrayToString(FAULTTEMP)));
@@ -285,6 +288,7 @@ public final class Pref_and_data {
 		prefs.putInt(STARTVOLUMEID, STARTVOLUME);
 
 		//Temperature
+		statusArray = DEFAULTSTATUS;
 		prefs.put(MINID, doubleArrayToString(MINTEMP));
 		prefs.put(WARNID, doubleArrayToString(WARNTEMP));
 		prefs.put(FAULTID, doubleArrayToString(FAULTTEMP));
@@ -528,38 +532,36 @@ System.out.println(new String(packetArray));
     public boolean updateStatus(byte[] packetArray) {
     	//Only read packet if device is initialized
     	if(initializeComplete) {
-System.out.println("Status Buffer: " + Arrays.toString(packetArray));    		
+System.out.println("Status Buffer: " + Arrays.toString(packetArray)); 
     		//Extract temperature bytes and convert to double
-    		for(int a=0; a<newTemp.length; a++) {
+    		for(int a=0; a<3; a++) {
     			double temp = ADCtoCelcius(packetArray[a], a); //Convert ADC reading to temperature in oC
-    			if(temp != INITIALTEMP) {  //Check that valid temperature was returned  			
-	    			if(newTemp[a] == INITIALTEMP) newTemp[a] = temp; //If this is the first reading - simply load values
-	    			else newTemp[a] = temp/tWindow + newTemp[a] * ((tWindow-1)/tWindow); //Otherwise use sliding window
-	    			
-	    			//Check if current reading should be sent to GUI - i.e. has significantly changed
-	    			if(newTemp[a] > (currentTemp[a] + tHist) || newTemp[a] < (currentTemp[a] - tHist)) { 
-	    				currentTemp[a] = newTemp[a];				
-	    	    	}
-    			}
-    			else; //Otherwise, skip conversion and leave GUI flag false
+    			if(statusArray[a] == INITIALTEMP) statusArray[a] = temp; //If this is the first reading - simply load values
+    			else statusArray[a] = temp/tWindow + statusArray[a] * ((tWindow-1)/tWindow); //Otherwise use sliding window
+    			
+    			//Check if current reading should be sent to GUI - i.e. has significantly changed
+    			if(statusArray[a] > (currentTemp[a] + tHist) || statusArray[a] < (currentTemp[a] - tHist)) { 
+    				currentTemp[a] = statusArray[a];				
+    	    	}
+    			else; //Otherwise keep current value to reduce thermometer jitter
     		}
-    		
-    		
-	    	double dialADC = (double) (packetArray[0] & 0xFF);
+ 	    	double dialADC = (double) (packetArray[3] & 0xFF);
 	     	newPercent = dialADC/255D*100D;
 	       	dialAngle = (newPercent*dialSlope)+dialOffset;
 	       	
 	       	//If dial has sufficiently changed, or is at 0 or 100, then update GUI
 	       	if(newPercent > (currentPercent + dHist) || newPercent< (currentPercent - dHist) || newPercent == 0 || newPercent == 100) {
 	       		currentPercent = newPercent;
+	       		statusArray[3] = newPercent;
+	       		statusArray[4] = dialAngle;
 	       	}
-	       	else;
+	       	else; //Otherwise keep current value to reduce dial jitter
 	       	
-	       	//Check if toggle switch position has changed
-	       	boolean toggleState = packetArray[1]!=0; //Convert byte to boolean
-	       	if(toggleState^currentToggle) { // ^ = XOR - only if values are unequal returns true
-	       		currentToggle = toggleState;
-	       	}
+	       	statusArray[5] = packetArray[4] & 0xFF; //Get sync status
+	       	statusArray[6] = packetArray[5] & 0xFF; //Get toggle status
+System.out.println("Status Send: " + Arrays.toString(statusArray));
+	       	gui.updateStatus(statusArray);
+       	
 	       	return true;
     	}
     	else return false;
@@ -571,7 +573,7 @@ System.out.println("Status Buffer: " + Arrays.toString(packetArray));
     	double adcDouble = (double) (adcByte & 0xFF); //Convert unsigned byte to double
     	double conversion = INITIALTEMP; //Initialize temp to impossible value to flag if conversion was not done
     	
-    	if(adcDouble > adcMin) {   //Minimum threshold for valid ADC recording  	
+    	if(adcDouble < adcMin) {   //Minimum threshold for valid ADC recording  	
 	    	//Math from: https://learn.adafruit.com/thermistor/using-a-thermistor
 	    	conversion = (-1*SERIESR*adcDouble) / (adcDouble-255D);
 	    	conversion = conversion/Ro[a];

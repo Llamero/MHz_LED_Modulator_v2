@@ -6,6 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.text.DecimalFormat;
+import java.util.Arrays;
+import java.util.Objects;
 
 import javax.swing.ButtonGroup;
 import javax.swing.GroupLayout;
@@ -34,10 +36,12 @@ public final class GUI_temp_and_panel extends javax.swing.JFrame {
     private double[] MINTEMP; //Minimum temperature for GUI thermometers - 0-input, 1-output, 2-external
     private double[] WARNTEMP; //Temperature at which overheat warning starts - also temp that device has to recover to before turning back on after fault - 0-input, 1-output, 2-external
     private double[] FAULTTEMP; //Temperature at which driver automatically shuts off - this is also max temp for gui thermometers - 0-input, 1-output, 2-external
-	private String[] TOGGLEPOSITIONS = new String[2]; //Stores names of toggle positions
+	private String[] TOGGLEPOSITIONS; //Stores names of toggle positions
 	private int DEFAULTANGLE; //Angle the dial should go to when disconnected
 	private double DEFAULTPERCENT; //Value flags dial as N/A
 	private double[] DEFAULTTEMP; //Input temperature sensor - initialize to impossible value - 0-input, 1-output, 2-external
+	private double[] DEFAULTSTATUS; //Stores default status so full GUI is updated on connection
+	private double[] previousStatus; //Stores previous status update so that only components that have changed are updated
 
     
     //Serial variables
@@ -464,46 +468,48 @@ System.out.println("Starting serial..."); //Perform task here. In this case, we 
         jLabel2.setText("N/A");
         rotatePanel1.rotateWithParam(DEFAULTANGLE);
         rotatePanel1.setToolTipText(Double.toString(DEFAULTPERCENT));
+        previousStatus = Arrays.copyOf(DEFAULTSTATUS, DEFAULTSTATUS.length); //Reset status array as well so next incoming packet will fully update gui
     }
 
     //Update the display status, including temperature, panel, etc.
-    public void updateStatus(double[] temp, double knobPercent, int knobAngle, boolean sync, boolean toggle) {
+    public void updateStatus(double[] statusArray) {
     	JLabel label = null;
     	JProgressBar bar = null;
     	
     	//Update temperature status
     	for(int a=0; a<3; a++) {
-    		switch (a) {
-    			case 0: 
-    				label = inputTempLabel;
-    				bar = inputTempBar;
-    				break;
-    			case 1:
-    				label = outputTempLabel;
-    				bar = outputTempBar;
-    				break;
-    			case 2:
-    				label = extTempLabel;
-    				bar = extTempBar;
-    				break;
-    		}
-    		label.setToolTipText(Double.toString(temp[a]));
-    		if(temp[a] >= MINTEMP[a]) {
-        		label.setText(df1.format(temp[a]));
-        		bar.setValue((int) Math.round(temp[a]));
-    		}
-    		else {
-        		label.setText("N/A");
-        		bar.setValue(0);
+    		if(statusArray[a] != previousStatus[a] || java.lang.Double.isNaN(previousStatus[a])) { //Only update GUI if status has changed
+    			previousStatus[a] = statusArray[a];
+   			
+	    		switch (a) {
+	    			case 0:
+	    				label = inputTempLabel;
+	    				bar = inputTempBar;
+	    				break;
+	    			case 1:
+	    				label = outputTempLabel;
+	    				bar = outputTempBar;
+	    				break;
+	    			case 2:
+	    				label = extTempLabel;
+	    				bar = extTempBar;
+	    				break;
+	    		}
+	    		label.setToolTipText(Double.toString(statusArray[a]));
+	    		if(statusArray[a] >= MINTEMP[a]) {
+	        		label.setText(df1.format(statusArray[a]));
+	        		bar.setValue((int) Math.round(statusArray[a]*10));
+	    		}
+	    		else {
+	        		label.setText("N/A");
+	        		bar.setValue(0);
+	    		}
     		}
     	}
     	
     	//Update knob
-        jLabel2.setText(df1.format(knobPercent));
-        rotatePanel1.rotateWithParam(knobAngle);
-        rotatePanel1.setToolTipText(Double.toString(knobPercent));
-    	
-    	
+        jLabel2.setText(df1.format(statusArray[3]));
+        rotatePanel1.rotateWithParam((int) statusArray[4]);
     }
     
     private void updateWave() {
@@ -511,8 +517,9 @@ System.out.println("Starting serial..."); //Perform task here. In this case, we 
     }
     
     public void addMenuItem(String ID) {
-    	rbMenuItem = new JRadioButtonMenuItem(ID); 
-    	rbMenuItem.setToolTipText(serial.getPortID());    	
+    	rbMenuItem = new JRadioButtonMenuItem(ID);
+    	if(Objects.equals(ID, "Disconnect")) rbMenuItem.setToolTipText("Disconnect");
+    	else rbMenuItem.setToolTipText(serial.getPortID());    	
         group.add(rbMenuItem);
         connectMenu.add(rbMenuItem);
       
@@ -528,14 +535,21 @@ System.out.println("Starting serial..."); //Perform task here. In this case, we 
     	return group;
     }
     
-    public void setConstants(double[] minTemp, double[] warnTemp, double[] faultTemp, double[] defaultTemp, String[] togglePositions, double defaultAngle, double DEFAULTPERCENT) {
-    	this.MINTEMP = minTemp;
-    	this.WARNTEMP = warnTemp;
-    	this.FAULTTEMP = faultTemp;
-    	this.DEFAULTTEMP = defaultTemp;
-    	this.TOGGLEPOSITIONS = togglePositions;
+    public void setConstants(double[] minTemp, double[] warnTemp, double[] faultTemp, double[] defaultTemp, String[] togglePositions, double defaultAngle, double DEFAULTPERCENT, double[] defaultStatusArray) {
+    	//When arrays were passed as arguments, they got over-written during execution, but when passed by index, they stayed stable.  Could not find explanation online (issue was specific with status array)
+    	//EDIT: This problem is due to when arrays are set equal, they actually are setting the references equal, causing the problem observed (changing one array would then change both, since they
+    	//referenced the same object.
+    	this.MINTEMP = Arrays.copyOf(minTemp, minTemp.length);
+    	this.WARNTEMP = Arrays.copyOf(warnTemp, warnTemp.length);
+    	this.FAULTTEMP = Arrays.copyOf(faultTemp, faultTemp.length);
+    	this.DEFAULTTEMP = Arrays.copyOf(defaultTemp, defaultTemp.length);
+    	this.TOGGLEPOSITIONS = Arrays.copyOf(togglePositions, togglePositions.length);
     	this.DEFAULTANGLE = (int) defaultAngle;
     	this.DEFAULTPERCENT = DEFAULTPERCENT;
+    	this.DEFAULTSTATUS = Arrays.copyOf(defaultStatusArray, defaultStatusArray.length);
+    	
+    	//Preload the initial status state into the previousStatus
+    	previousStatus = Arrays.copyOf(defaultStatusArray, defaultStatusArray.length);
     }
 }
 
