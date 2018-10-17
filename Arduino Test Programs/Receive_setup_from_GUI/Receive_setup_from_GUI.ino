@@ -140,8 +140,8 @@ void loop() {
   //Check event status - 1 - serial event, 2 - toggle event, 3 - failsafe event
   if(updateStatus) checkStatus();
   if(event){
-    ////processReceivedPackets();
-    if(event == 1) driverStandby();
+    ////
+    if(event == 1) processReceivedPackets();
     if(event == 2);//----------------------------------------------------------------------------------------------------------HANDLE TOGGLE EVENT-------------------------------------------------------------------------
     if(event == 3); //failSafe();
   }
@@ -266,13 +266,11 @@ void processReceivedPackets(){
     if(packetLength >= HEADER+1){ //If minimum number of necessary bytes were recieved, check buffer for setup packet
       for(a=0; a<=(packetLength-HEADER-1); a++){ //Search for valid header in packet
         if(!rxBuffer[a]){ //If start byte is found, check for valid packet
-          if(packetLength == COMMANDSIZE){ //If packet is proper comand length, check for valid header - 
-            //Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
-            if(rxBuffer[rxStart] == 0 && rxBuffer[rxStart+1] == rxBuffer[rxStart+HEADER] && rxBuffer[rxStart+2] == COMMANDSIZE && rxBuffer[rxStart+3] == rxBuffer[rxStart+HEADER]){ //If header is valid, parse the command
-              if(rxBuffer[rxStart+HEADER] == DISCONNECTPACKET) driverStandby(); //If disconnect is received, stop driver until reconnect resets driver.  This keeps driver from spamming serial buffer
-              else if(rxBuffer[rxStart+HEADER] == RESETPACKET) resetPacket(); //If reset command is received, set program line index to and reinitialize driver without hard reset
-              else if(rxBuffer[rxStart+HEADER] == FAULTPACKET) failSafe(); //If fault command is received, enter failsafe (i.e. failsafe test). 
-            }
+          //Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
+          if(rxBuffer[a] == 0 && rxBuffer[a+1] == rxBuffer[a+HEADER] && rxBuffer[a+2] == COMMANDSIZE && rxBuffer[a+3] == rxBuffer[a+HEADER]){ //If header is valid, parse the command
+            if(rxBuffer[a+HEADER] == DISCONNECTPACKET) driverStandby(); //If disconnect is received, stop driver until reconnect resets driver.  This keeps driver from spamming serial buffer
+            else if(rxBuffer[a+HEADER] == RESETPACKET) resetPacket(); //If reset command is received, set program line index to and reinitialize driver without hard reset
+            else if(rxBuffer[a+HEADER] == FAULTPACKET) failSafe(); //If fault command is received, enter failsafe (i.e. failsafe test). 
           }          
         }
       }
@@ -357,8 +355,6 @@ void checkSetup(){
           if((!DELAYUNITS && (ONDELAY < 16384 && OFFDELAY < 16384)) || DELAYUNITS){ //If us, make sure that value does not exceed 16383 cap - https://www.arduino.cc/reference/en/language/functions/time/delaymicroseconds/
             for(a=rxIndex; a < rxIndex+SETUPSIZE; a++) txPacket[a-rxIndex] = rxBuffer[a];
             Serial.write(txPacket, SETUPSIZE); //Send received setup back back to computer for confirmation
-
-            while(Serial.available()) Serial.read(); //Clear serial buffer
                         
             //If setup is valid, then initialization is successful
             initialized = true;
