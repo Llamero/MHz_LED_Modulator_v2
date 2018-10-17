@@ -1,5 +1,5 @@
-//const char IDARRAY[] = "MOM Test Box";
-const char IDARRAY[] = "Just an Arduino";
+const char IDARRAY[] = "MOM Test Box";
+//const char IDARRAY[] = "Just an Arduino";
 const long BAUDRATE = 250000;
 const uint8_t NINITIALIZE = 4; //Number of times to try connecting to GUI until instead booting using default settings
 const boolean NOSERIAL = true; //If the device boots into default configuration due to no serial, turn off serial
@@ -143,7 +143,8 @@ void loop() {
     ////
     if(event == 1) processReceivedPackets();
     if(event == 2);//----------------------------------------------------------------------------------------------------------HANDLE TOGGLE EVENT-------------------------------------------------------------------------
-    if(event == 3); //failSafe();
+    if(event == 3) failSafe();
+    event = 0; //Clear event
   }
 }
 
@@ -195,7 +196,7 @@ void checkStatus(){
   }
   else if(taskIndex == 3){ //Get intensity knob position - 12us
     analogRead(POT);
-    txPacket[HEADER + taskIndex] = analogRead(POT);
+    txPacket[HEADER + taskIndex] = analogRead(POT)>>2;
   }
   else if(taskIndex >= STATUSPACKET && taskIndex < (2*STATUSPACKET+HEADER)){ //6us
     Serial.write(txPacket[taskIndex - STATUSPACKET]);
@@ -203,7 +204,7 @@ void checkStatus(){
   else if(taskIndex == 4){ //Perform all fast tasks as one set
     txPacket[HEADER + taskIndex++] = syncStatus;
     txPacket[HEADER + taskIndex] = PIND & B00000100; //Check toggle switch
-    if(txPacket[4] > FAULTTEMP[0] && txPacket[5] > FAULTTEMP[1] && txPacket[6] > FAULTTEMP[2]) event = 3; //Check whether device is overheating and enter failsafe if it is
+    if(txPacket[4] < FAULTTEMP[0] || txPacket[5] < FAULTTEMP[1] || txPacket[6] < FAULTTEMP[2]) event = 3; //Check whether device is overheating and enter failsafe if it is
     buildPacket(STATUSPACKET, STATUSPACKET+HEADER);
   }
   //For remainder of checks monitor toggle switch and serial alternately to prevent over-riding event flags if both happen synchronously
@@ -361,7 +362,6 @@ void checkSetup(){
             SPI.end(); //End SPI so that locks on warning LED and buzzer are released
             PORTB |= FAULTLED; //Turn on warning LED
             for(a=0; a<500; a++){ //Generate tone for 0.1 seconds
-              taskIndex++;  
               PORTB |= B00010000;
               delayMicroseconds(STARTVOLUME);
               PORTB &= B11101111;
@@ -394,20 +394,25 @@ void failSafe(){
     
   while(fault){ //Stay in fault mode until all thermistors are recording below the warning temp
     PORTB |= FAULTLED; //Turn on warning LED
-    txPacket[4]=FAULTPACKET; //Send fault packet to GUI
-    buildPacket(FAULTPACKET, COMMANDSIZE);
-    Serial.write(txPacket, COMMANDSIZE); //Send assembled data packet to computer
+    //txPacket[4]=FAULTPACKET; //Send fault packet to GUI
+    //buildPacket(FAULTPACKET, COMMANDSIZE);
+    //Serial.write(txPacket, COMMANDSIZE); //Send assembled data packet to computer
        
-    for(a=0; a<3789; a++){ //Generate tone for 0.5 seconds
+    while(taskIndex){
       checkStatus(); 
       PORTB |= B00010000;
       delayMicroseconds(FAULTVOLUME);
       PORTB &= B11101111;
       delayMicroseconds(255-FAULTVOLUME);
     }
+    checkStatus();
     PORTB &= B11111011; //Turn off warning LED
-    delay(500); //Wait for 0.5 seconds
-    if(txPacket[4] > WARNTEMP[0] && txPacket[5] > WARNTEMP[1] && txPacket[6] > WARNTEMP[2]) fault = false; //If all thermistor temps are below the warn temperature, then exit the fault state - interrupts will update temp
+    while(taskIndex){
+      checkStatus();
+      delayMicroseconds(255);
+    }
+    checkStatus();
+    if(txPacket[4] > WARNTEMP[0] && txPacket[5] > WARNTEMP[1] && txPacket[6] > WARNTEMP[2]) fault = false; //If all thermistor temps are below the warn temperature, then exit the fault state
   }
 
   SPI.begin(); //Restart SPI communication
