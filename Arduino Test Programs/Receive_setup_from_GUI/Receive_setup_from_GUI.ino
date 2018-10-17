@@ -172,17 +172,7 @@ void initializeDevice(){
   TIMSK0 |= _BV(OCIE0A);
 
   //Disable serial if in manual mode and NOSERIAL is true
-  
-
-  
-  //ADCs tend to read high on reboot, so take a set of dummy reads to calibrate them
-  counter = 18;
-  while(counter){
-    analogRead(a%3);
-    analogRead(a%3);
-    delay(100);
-    counter--;
-  }
+ 
 }
 
 //Index for recording current position in background tasks 0-2 - record temperatures, 3 - record knob, 4 - sync status (on/off), 5-toggle switch, 6-build header, 7-17 - send byte[n-7]
