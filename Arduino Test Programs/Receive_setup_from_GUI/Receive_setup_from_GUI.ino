@@ -140,11 +140,11 @@ void loop() {
   //Check event status - 1 - serial event, 2 - toggle event, 3 - failsafe event
   if(updateStatus) checkStatus();
   if(event){
-    if(event == 1) processReceivedPackets();
+    ////processReceivedPackets();
+    if(event == 1) driverStandby();
     if(event == 2);//----------------------------------------------------------------------------------------------------------HANDLE TOGGLE EVENT-------------------------------------------------------------------------
-    if(event == 3) failSafe();
+    if(event == 3); //failSafe();
   }
-  delay(1);
 }
 
 void initializeDevice(){
@@ -172,6 +172,7 @@ void initializeDevice(){
 
   //Disable serial if in manual mode and NOSERIAL is true
   
+
   
   //ADCs tend to read high on reboot, so take a set of dummy reads to calibrate them
   counter = 18;
@@ -196,18 +197,20 @@ void checkStatus(){
     analogRead(POT);
     txPacket[HEADER + taskIndex] = analogRead(POT);
   }
-  else if(taskIndex > STATUSPACKET && taskIndex <= (2*STATUSPACKET+HEADER)){ //6us
-    Serial.write(txPacket[taskIndex - STATUSPACKET - 1]);
+  else if(taskIndex >= STATUSPACKET && taskIndex < (2*STATUSPACKET+HEADER)){ //6us
+    Serial.write(txPacket[taskIndex - STATUSPACKET]);
   }
   else if(taskIndex == 4){ //Perform all fast tasks as one set
     txPacket[HEADER + taskIndex++] = syncStatus;
     txPacket[HEADER + taskIndex] = PIND & B00000100; //Check toggle switch
     if(txPacket[4] > FAULTTEMP[0] && txPacket[5] > FAULTTEMP[1] && txPacket[6] > FAULTTEMP[2]) event = 3; //Check whether device is overheating and enter failsafe if it is
-    buildPacket(STATUSPACKET, STATUSPACKET);
+    buildPacket(STATUSPACKET, STATUSPACKET+HEADER);
   }
   //For remainder of checks monitor toggle switch and serial alternately to prevent over-riding event flags if both happen synchronously
   else if(taskIndex%2){ //Check for received serial packet
-    if (Serial.available()) event = 1; //Set event flag to check rx serial buffer if data is available
+    if (Serial.available()){
+      event = 1; //Set event flag to check rx serial buffer if data is available
+    }
   }
   else{ //Monitor for change in toggle switch
     if(toggleSwitch ^ (PIND & B00000100)){
@@ -259,19 +262,19 @@ void processReceivedPackets(){
     }
   }
   else{
-    rxBuffer[rxIndex] = Serial.read(); //Otherwise, load single byte into circular buffer
-    packetLength = rxIndex - rxStart;
-    if(rxIndex == rxStart && rxBuffer[rxIndex++]) rxStart = rxIndex; //If start of packet is not yet found (either leading 0x00 or rxIndex != rxStart) then move the start point one increment forward as well 
-    else if(packetLength == COMMANDSIZE){ //If packet is proper comand length, check for valid header - 
-      //Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
-      if(rxBuffer[rxStart] == 0 && rxBuffer[rxStart+1] == rxBuffer[rxStart+HEADER] && rxBuffer[rxStart+2] == COMMANDSIZE && rxBuffer[rxStart+3] == rxBuffer[rxStart+HEADER]){ //If header is valid, parse the command
-        if(rxBuffer[rxStart+HEADER] == DISCONNECTPACKET) driverStandby(); //If disconnect is received, stop driver until reconnect resets driver.  This keeps driver from spamming serial buffer
-        else if(rxBuffer[rxStart+HEADER] == RESETPACKET) resetPacket(); //If reset command is received, set program line index to and reinitialize driver without hard reset
-        else if(rxBuffer[rxStart+HEADER] == FAULTPACKET){ //If fault command is received, enter failsafe (i.e. failsafe test).
-          failSafe();
-          rxStart = rxIndex; //Move start point to current index to flag that no packet is active, and start next packet search at end of current packet
+    packetLength = Serial.readBytes(rxBuffer, 64); //If not initialized, retrieve the entire rx serial buffer
+    if(packetLength >= HEADER+1){ //If minimum number of necessary bytes were recieved, check buffer for setup packet
+      for(a=0; a<=(packetLength-HEADER-1); a++){ //Search for valid header in packet
+        if(!rxBuffer[a]){ //If start byte is found, check for valid packet
+          if(packetLength == COMMANDSIZE){ //If packet is proper comand length, check for valid header - 
+            //Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
+            if(rxBuffer[rxStart] == 0 && rxBuffer[rxStart+1] == rxBuffer[rxStart+HEADER] && rxBuffer[rxStart+2] == COMMANDSIZE && rxBuffer[rxStart+3] == rxBuffer[rxStart+HEADER]){ //If header is valid, parse the command
+              if(rxBuffer[rxStart+HEADER] == DISCONNECTPACKET) driverStandby(); //If disconnect is received, stop driver until reconnect resets driver.  This keeps driver from spamming serial buffer
+              else if(rxBuffer[rxStart+HEADER] == RESETPACKET) resetPacket(); //If reset command is received, set program line index to and reinitialize driver without hard reset
+              else if(rxBuffer[rxStart+HEADER] == FAULTPACKET) failSafe(); //If fault command is received, enter failsafe (i.e. failsafe test). 
+            }
+          }          
         }
-        else rxStart++; //If the packet is invalid, move the start index over by one to scan for a valid packet via a sliding window
       }
     }
   }
@@ -279,8 +282,9 @@ void processReceivedPackets(){
 
 void driverStandby(){
   PORTD |= B00011000; //Set analog swich to negative voltage output - this will force the LED off (due to rail offset - grounding the LED would still leave LED with low current)
-  PORTB |= B00100000;
+  PORTB |= B00100000; //Turn on LED 13 to indicate standby
   Serial.end(); //Stop serial communication so Arduino does not spam output buffer
+  SPI.end(); //Stop SPI to restore access to PORTB
   TIMSK0 |= _BV(OCIE0A); //Turn interrupts on to continue monitoring driver temperature - and alarm if overtemp
   while(1){ //Hold until reset
     delay(1);
@@ -353,6 +357,8 @@ void checkSetup(){
           if((!DELAYUNITS && (ONDELAY < 16384 && OFFDELAY < 16384)) || DELAYUNITS){ //If us, make sure that value does not exceed 16383 cap - https://www.arduino.cc/reference/en/language/functions/time/delaymicroseconds/
             for(a=rxIndex; a < rxIndex+SETUPSIZE; a++) txPacket[a-rxIndex] = rxBuffer[a];
             Serial.write(txPacket, SETUPSIZE); //Send received setup back back to computer for confirmation
+
+            while(Serial.available()) Serial.read(); //Clear serial buffer
                         
             //If setup is valid, then initialization is successful
             initialized = true;
