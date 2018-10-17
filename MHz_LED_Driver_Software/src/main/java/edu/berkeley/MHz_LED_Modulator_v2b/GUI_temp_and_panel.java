@@ -539,6 +539,7 @@ System.out.println("Starting serial..."); //Perform task here. In this case, we 
     	//When arrays were passed as arguments, they got over-written during execution, but when passed by index, they stayed stable.  Could not find explanation online (issue was specific with status array)
     	//EDIT: This problem is due to when arrays are set equal, they actually are setting the references equal, causing the problem observed (changing one array would then change both, since they
     	//referenced the same object.
+    	//https://stackoverflow.com/questions/7882074/how-do-you-set-one-arrays-values-to-another-arrays-values-in-java
     	this.MINTEMP = Arrays.copyOf(minTemp, minTemp.length);
     	this.WARNTEMP = Arrays.copyOf(warnTemp, warnTemp.length);
     	this.FAULTTEMP = Arrays.copyOf(faultTemp, faultTemp.length);
