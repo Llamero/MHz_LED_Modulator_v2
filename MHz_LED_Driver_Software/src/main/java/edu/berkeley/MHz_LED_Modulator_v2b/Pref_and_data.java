@@ -174,6 +174,7 @@ public final class Pref_and_data {
 	private byte[] rxBuffer = new byte[1024]; //Circular buffer for storing the rx serial stream
 	private byte[] preferencePacket = new byte[SETUPPACKET+HEADERLENGTH]; //Array for storing the prefence packet to check against driver version
 	private int connectCount = 0; //Number of attempts at connecting to driver
+	private String currentID; //ID of device that is currently connected
     //Sync:
     private int onDelay; //Delay from previous event before LED is turned on
     private int offDelay; //Delay from previous event before LED is turned off
@@ -441,7 +442,8 @@ System.out.println(ID);
     		return true;
     	}
     	else { //Otherwise, ID packet means device is now connected, so send and verify prefs, then adjust serial speed to live update rate    		
-System.out.println(new String(packetArray)); 
+    		currentID = new String(packetArray);
+System.out.println(currentID);
 			serial.setSerialDelay(runReadWait, runSendWait); //Speed up streaming now that initialization is complete
     		sendPreferencePacket();
     		return true;
@@ -451,7 +453,7 @@ System.out.println(new String(packetArray));
 	private void sendPreferencePacket() {
 		//Send single STARTBYTE to confirm receipt of ID and start of SETUP transfer
 		serial.reply(new byte[] {STARTBYTE});
-		
+		gui.updateProgress(66, "Validating setup packet of: " + currentID);
 		byte[] onDelayArray = ByteBuffer.allocate(4).putInt(onDelay).array();
 		byte[] offDelayArray = ByteBuffer.allocate(4).putInt(offDelay).array();
 		connectCount = 0; //Reset the counter for number of reconnect attempts
@@ -503,12 +505,16 @@ System.out.println(new String(packetArray));
 	//Verify the setup of the driver
 	private boolean confirmSetup(byte[] packetArray) {
 		if(initializeComplete) {
+			gui.updateProgress(99, "Validating driver setup packet...");
 			boolean confirm = false;		
 			//verify each setup parameter against the packet
 			if(packetLength == SETUPPACKET + HEADERLENGTH) {
 				for(int a=0; a<SETUPPACKET; a++) {
 					System.out.println(packetArray[a] + " " + preferencePacket[a+HEADERLENGTH]);
-					if(packetArray[a] == preferencePacket[a+HEADERLENGTH]) confirm = true;
+					if(packetArray[a] == preferencePacket[a+HEADERLENGTH]) {
+						confirm = true;
+						gui.updateProgress(0, "Connected to: " + currentID);
+					}
 					else confirm = false;
 				}
 			}

@@ -8,6 +8,7 @@ import java.util.Collections;
 import javax.swing.AbstractButton;
 import javax.swing.ButtonGroup;
 import javax.swing.JRadioButtonMenuItem;
+import javax.swing.SwingWorker;
 
 import com.fazecast.jSerialComm.SerialPort;
 import com.fazecast.jSerialComm.SerialPortDataListener;
@@ -78,41 +79,47 @@ System.out.println("Testing " +  arduinoPort.getDescriptivePortName());
     }
     
     public void connectDevice(ButtonGroup group){
-    	disconnect();
-        Iterable<AbstractButton> arl = Collections.list(group.getElements()); //Create a list of buttons in connect menu
-        for(AbstractButton ab:arl){ //Find which radio button is selected
-            if(ab.isSelected()){
-                for(SerialPort b:serialPorts){ //Search all COM ports for one that matches active radioButton (using toolTipText which contains COM port name)
-                    if(ab.getToolTipText().equals(b.getDescriptivePortName())){
-                        System.out.println(b.getDescriptivePortName() + random());
-                        arduinoPort = b;
-                        arduinoPort.setBaudRate(BAUDRATE);
-                        arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, INITIALREADWAIT, INITIALSENDWAIT); //Blocking means wait the full 2000ms to catch the set number of bytes
-                        arduinoPort.openPort(); //Connect to matching port if found
-                        readSerial(); //Perform handshake and send prefs to Arduino since it will have reset
-                        
-                        //Add a data listener to the port to catch any incoming packets
-                        arduinoPort.addDataListener(new SerialPortDataListener() {
-                    	   public int getListeningEvents() { return SerialPort.LISTENING_EVENT_DATA_AVAILABLE; }
-                    	   @Override
-                    	   public void serialEvent(SerialPortEvent event)
-                    	   {
-								readSerial();
+		SwingWorker<Integer, Integer> connectionThread = new SwingWorker<Integer, Integer>() {
+   	        protected Integer doInBackground() throws Exception {
+   	         disconnect();
+   	         Iterable<AbstractButton> arl = Collections.list(group.getElements()); //Create a list of buttons in connect menu
+   	         for(AbstractButton ab:arl){ //Find which radio button is selected
+   	             if(ab.isSelected()){
+   	                 for(SerialPort b:serialPorts){ //Search all COM ports for one that matches active radioButton (using toolTipText which contains COM port name)
+   	                     if(ab.getToolTipText().equals(b.getDescriptivePortName())){
+   	 System.out.println(b.getDescriptivePortName() + random());
+   	 						 gui.updateProgress(33, "Sending setup packet to: " + ab.getText());
+   	                         arduinoPort = b;
+   	                         arduinoPort.setBaudRate(BAUDRATE);
+   	                         arduinoPort.setComPortTimeouts(SerialPort.TIMEOUT_READ_BLOCKING, INITIALREADWAIT, INITIALSENDWAIT); //Blocking means wait the full 2000ms to catch the set number of bytes
+   	                         arduinoPort.openPort(); //Connect to matching port if found
+   	                         readSerial(); //Perform handshake and send prefs to Arduino since it will have reset
+   	                         
+   	                         //Add a data listener to the port to catch any incoming packets
+   	                         arduinoPort.addDataListener(new SerialPortDataListener() {
+   	                     	   public int getListeningEvents() { return SerialPort.LISTENING_EVENT_DATA_AVAILABLE; }
+   	                     	   @Override
+   	                     	   public void serialEvent(SerialPortEvent event)
+   	                     	   {
+   	 								readSerial();
 
-                    	   }
-                        });
-                        gui.updateProgress(0, "Connected to: " + ab.getText());
-                        arduinoConnect = true;
-                        break;
-                    }
-                }
-            }
-        }
-        if(!arduinoConnect) {
-            if(nArduino == 1) gui.updateProgress(0, "Disconnected: " + nArduino + " device available.");
-            else gui.updateProgress(0, "Disconnected: " + nArduino + " devices available.");
-            gui.resetDisplay();
-        }
+   	                     	   }
+   	                         });
+   	                         arduinoConnect = true;
+   	                         break;
+   	                     }
+   	                 }
+   	             }
+   	         }
+   	         if(!arduinoConnect) {
+   	             if(nArduino == 1) gui.updateProgress(0, "Disconnected: " + nArduino + " device available.");
+   	             else gui.updateProgress(0, "Disconnected: " + nArduino + " devices available.");
+   	             gui.resetDisplay();
+   	         }
+  	            return 100;
+   	        }
+		};
+		connectionThread.execute();
     }
     
     public void disconnect() {
