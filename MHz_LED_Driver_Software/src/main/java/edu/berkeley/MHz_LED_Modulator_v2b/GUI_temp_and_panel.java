@@ -19,6 +19,11 @@ import javax.swing.JRadioButtonMenuItem;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
 import javax.swing.SwingWorker;
+import javax.swing.UIDefaults;
+import javax.swing.UIManager;
+import javax.swing.Painter;
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 
 /**
@@ -88,11 +93,16 @@ public final class GUI_temp_and_panel extends javax.swing.JFrame {
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(GUI_temp_and_panel.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
-        initComponents(); //Initialize interface components
-        initSelfListeners(); //Setup listeners for initialization events to happen when GUI appears
+       //</editor-fold>
+
     }
 
+    //Don't build GUI on class initialization, as the GUI class needs to receive prefs first
+    public void buildGUI() {
+	    initComponents(); //Initialize interface components
+	    initSelfListeners(); //Setup listeners for initialization events to happen when GUI appears 
+    }
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -103,18 +113,21 @@ public final class GUI_temp_and_panel extends javax.swing.JFrame {
     private void initComponents() {
     	group = new ButtonGroup();
         tempPanel = new javax.swing.JPanel();
-        outputTempBar = new javax.swing.JProgressBar();
-        outputTempBar.setMaximum(1000);
-        outputBarLabel = new javax.swing.JLabel();
         inputBarLabel = new javax.swing.JLabel();
         inputTempBar = new javax.swing.JProgressBar();
-        inputTempBar.setMaximum(1000);
+        inputTempBar.setMinimum((int) Math.round(MINTEMP[0]*10));
+        inputTempBar.setMaximum((int) Math.round(FAULTTEMP[0]*10));
         inputTempLabel = new javax.swing.JLabel();
         inputTempLabel.setToolTipText("-273.15");
+        outputTempBar = new javax.swing.JProgressBar();
+        outputTempBar.setMinimum((int) Math.round(MINTEMP[0]*10));
+        outputTempBar.setMaximum((int) Math.round(FAULTTEMP[0]*10));
+        outputBarLabel = new javax.swing.JLabel();
         outputTempLabel = new javax.swing.JLabel();
         outputTempLabel.setToolTipText("-273.15");
         extTempBar = new javax.swing.JProgressBar();
-        extTempBar.setMaximum(1000);
+        extTempBar.setMinimum((int) Math.round(MINTEMP[0]*10));
+        extTempBar.setMaximum((int) Math.round(FAULTTEMP[0]*10));
         extTempLabel = new javax.swing.JLabel();
         extTempLabel.setToolTipText("-273.15");
         ledBarLabel = new javax.swing.JLabel();
@@ -162,6 +175,7 @@ public final class GUI_temp_and_panel extends javax.swing.JFrame {
 
         javax.swing.GroupLayout tempPanelLayout = new javax.swing.GroupLayout(tempPanel);
         tempPanel.setLayout(tempPanelLayout);
+        tempPanel.setOpaque(false);
         tempPanelLayout.setHorizontalGroup(
             tempPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(tempPanelLayout.createSequentialGroup()
@@ -461,6 +475,8 @@ System.out.println("Starting serial..."); //Perform task here. In this case, we 
     		bar.setOrientation(1);
     		bar.setValue(0);
     	}
+    	tempPanel.setOpaque(false);
+    	tempPanel.repaint();
 
         jProgressBar1.setValue(0);
         jProgressBar1.setStringPainted(true);
@@ -497,18 +513,32 @@ System.out.println("Starting serial..."); //Perform task here. In this case, we 
 	    		}
 	    		label.setToolTipText(Double.toString(statusArray[a]));
 	    		if(statusArray[a] >= MINTEMP[a]) {
-	        		label.setText(df1.format(statusArray[a]));
+	        		label.setText(df1.format(statusArray[a]) + "°C");
 	        		bar.setValue((int) Math.round(statusArray[a]*10));
 	    		}
 	    		else {
+	    			tempPanel.setOpaque(false);
 	        		label.setText("N/A");
-	        		bar.setValue(0);
+	        		bar.setValue(0);	        		
 	    		}
-    		}
+    		}   		
     	}
     	
+    	if(statusArray[0] >= MINTEMP[0] || statusArray[1] >= MINTEMP[1] || statusArray[2] >= MINTEMP[2]) {
+    		if(statusArray[0] >= WARNTEMP[0] || statusArray[1] >= WARNTEMP[1] || statusArray[2] >= WARNTEMP[2]) {
+    			tempPanel.setOpaque(true);
+    			if(statusArray[0] >= FAULTTEMP[0] || statusArray[1] >= FAULTTEMP[1] || statusArray[2] >= FAULTTEMP[2]) {
+    				tempPanel.setBackground(Color.RED);
+    			}
+    			else tempPanel.setBackground(Color.ORANGE);
+    		}
+    		else tempPanel.setOpaque(false);
+		}
+		else tempPanel.setOpaque(false);
+    	tempPanel.repaint();
+    	
     	//Update knob
-        jLabel2.setText(df1.format(statusArray[3]));
+        jLabel2.setText(df1.format(statusArray[3]) + "%");
         rotatePanel1.rotateWithParam((int) statusArray[4]);
     }
     

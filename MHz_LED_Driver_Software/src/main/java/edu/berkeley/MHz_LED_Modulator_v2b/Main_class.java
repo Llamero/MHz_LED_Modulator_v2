@@ -15,7 +15,7 @@ public class Main_class {
 		m.shareConstants();
 		
 		//Show GUI
-		v.resetDisplay(); //Reset display to update it using constants and prefs from model
+		v.buildGUI(); //Reset display to update it using constants and prefs from model
 		v.setVisible(true);
 	}
 }
