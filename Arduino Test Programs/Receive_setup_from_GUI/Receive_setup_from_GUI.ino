@@ -1,8 +1,8 @@
 const char IDARRAY[] = "MOM Test Box";
 //const char IDARRAY[] = "Just an Arduino";
 const long BAUDRATE = 250000;
-const uint8_t NINITIALIZE = 4; //Number of times to try connecting to GUI until instead booting using default settings
-const boolean NOSERIAL = true; //If the device boots into default configuration due to no serial, turn off serial
+const uint8_t NINITIALIZE = 0; //Number of times to try connecting to GUI until instead booting using default settings
+const boolean NOSERIAL = false; //If the device boots into default configuration due to no serial, turn off serial
 
 #include <SPI.h>
 
@@ -30,7 +30,7 @@ const uint8_t STATUSPACKET = 6; //Identifies packet as temperature recordings an
 const uint8_t FAULTPACKET = 10; //Identifies packet as driver entering or exiting fault state - or if received, then commanding driver to enter fault state (i.e. fault test)
 const uint8_t RESETPACKET = 11; //Identifies packet commanding driver to reset
 const uint8_t DISCONNECTPACKET = 12; //Identifies packet commanding driver to reset
-const uint8_t SETUPPACKET = 28; //Identifies packet as receiving setup configuration information - also is number of data bytes in packet
+const uint8_t SETUPPACKET = 29; //Identifies packet as receiving setup configuration information - also is number of data bytes in packet
 const uint8_t HEADER = 4; //Indentifies length of header
 const uint8_t WAVEPACKET = 250+HEADER; //Identifies packet as recorded analog waveform - also is number of bytes in packet
 const uint8_t IDSIZE = sizeof(IDARRAY) + HEADER; //Size of ID packet
@@ -40,23 +40,24 @@ const long TIMEOUT = (long) (((1000/(float) BAUDRATE)*(64*8)) + 1000); //Wait th
 
 //Setup variables
 uint8_t WARNTEMP[] = {98, 98, 98}; //warn temps, warn of overheating at 60oC (60oC = 98 on 8-bit ADC)
-uint8_t FAULTTEMP[] = {66, 66, 66}; //fault temps. enter fault at 80oC (80oC = 66 on 8-bit ADC)
-uint16_t ONDELAY = 0; //Delay from previous event before LED is turned on
-uint16_t OFFDELAY = 0; //Delay from previous event before LED is turned off
+uint8_t FAULTTEMP[] = {0, 0, 0}; //fault temps. enter fault at 80oC (80oC = 66 on 8-bit ADC)
+uint16_t DELAY1 = 0; //Delay from trigger to LED trigger state
+uint16_t DELAY2 = 600; //Delay from delay 1 to LED standby state
 boolean DELAYORDER = 0; //Order of delays before trigger (0 = LED starts off, 1 = LED starts on);
 boolean DELAYUNITS = 0; //us or ms delay - confocal sync will always use us - us is also capped at 16383 (0 = us; 1 = ms)
 uint8_t FANMINTEMP = 173; //LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
 uint8_t FANMAXTEMP = WARNTEMP[0]; //LED temp above which the PWM fan runs at maximum speed, - default to warn temp  
-uint8_t TRIGGER = 0; //trigger (0=toggle, 1=analog, 2=digital, 3=digital activates analog - such as shutter open then trigger off of fast mirror)
+uint8_t TRIGGER = 2; //trigger (0=toggle, 1=analog, 2=digital - confocal uses separate digital to trigger syncing)
 uint8_t ANALOGSEL = 3; //(analog select (3 = diode, 4 = raw) 
 uint8_t FAULTLED = B00000100; //Alarm to alert to warning temperature (0=false, 4=true)
 uint8_t FAULTVOLUME = 127; //Volume of alarm to alert to fault temperature (0 = min, 127 = max);
 uint8_t STARTVOLUME = 10; //Volume of short tone upon initializing (0 = min, 127 = max);
 boolean PWMFAN = 0; //Digital I/O as PWM fan controller (0=N/A, 1=on)
 uint8_t FANPIN = 0; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
-boolean SYNCTYPE = 0; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
-boolean DTRIGGERPOL = 0; //digital trigger polarity (0 = High, 1 = Low)
+boolean SYNCTYPE = 1; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
+boolean DTRIGGERPOL = 1; //digital trigger polarity (0 = Low, 1 = High)
 boolean ATRIGGERPOL = 0; //analog trigger polarity (0 = Rising, 1 = Falling)
+boolean SHUTTERTRIGGERPOL = 1; //Shutter trigger polarity (0 = Low, 1 = High) - only used for confocal syncs
 boolean LEDSOURCE = 0; //LED intensity signal source (0 = Ext source, 1 = AWG source)
 boolean TRIGHOLD = 0; //trigger hold (0 = single shot, 1 = repeat until trigger resets), 
 boolean AWGSOURCE = 0; //AWG source (0=rxPacket, 1=mirror the intensity knob),             
@@ -80,6 +81,9 @@ boolean syncStatus = false; //Flag for tracking if actively triggering LED or in
 uint8_t toggleSwitch = 0; //FLag for tracking position of toggle switch - B00000000 = off, B00000100 = on
 volatile boolean updateStatus = false; //Flag set by interrupt to check status - volatile variable as it resides in an interrupt
 uint8_t nTry = 0; //Number of sttempts made at connecting to GUI
+boolean ledOn = 0; //Variable for tracking whether the LED is on
+uint8_t LEDstate0 = 0; //Variable for the state the LED is in before trigger (PORTB bitmask)
+uint8_t LEDstate1 = 0; //Variable for the state the LED is in after trigger (PORTB bitmask)
 
 //PORT D: USB, Switches, Digital I/O
 //0 - USB RX
@@ -136,16 +140,64 @@ void setup() {
   initializeDevice();
 }
 
+//Loop will act as sync router
 void loop() {
-  //Check event status - 1 - serial event, 2 - toggle event, 3 - failsafe event
-  if(updateStatus) checkStatus();
-  if(event){
-    ////
-    if(event == 1) processReceivedPackets();
-    if(event == 2);//----------------------------------------------------------------------------------------------------------HANDLE TOGGLE EVENT-------------------------------------------------------------------------
-    if(event == 3) failSafe();
-    event = 0; //Clear event
+  SPI.end();
+  if(DELAYORDER){ //If LED is to be turned off on trigger
+    LEDstate1 = B11111100; //Turn off LED on trigger
+    if(LEDSOURCE) LEDstate0 = B11110100; //Set to AWG before trigger
+    else LEDstate0 = B11101100; //Set to EXT before trigger
   }
+  else{ //If LED is to be turned on on trigger
+    LEDstate0 = B11111100; //Turn off LED before trigger
+    if(LEDSOURCE) LEDstate1 = B11110100; //Set to AWG after trigger
+    else LEDstate1 = B11101100; //Set to EXT after trigger
+  }
+  
+  if(SYNCTYPE){ //Confocal sync pipeline - i.e. no interrupts during mirror sync - iterrupts on during standby
+    DDRD &= B11011111; //Set Digital I/O 1 to input to get shutter trigger 
+    if(TRIGGER = 2) DDRD &= B10011111; //If digital mirror sync, then also set digital I/O 2 to input
+    confocalStandby();
+  }
+}
+
+//Wait for digital trigger event (usually shutter) to start mirror sync
+void confocalStandby(){
+  PORTD = LEDstate0; //Set LED to standby state
+  while((boolean) (PIND & B00100000) != SHUTTERTRIGGERPOL){
+    PORTB |= B00100000;
+    interrupts(); //Turn on interrupts to automatically manage checking status
+    if(updateStatus) checkStatus(); //Standby while the digital pin is opposite the 
+  }
+  PORTB &= B11011111;
+  noInterrupts(); //Turn off interrupts to keep precise timing during trigger syncs
+  if(TRIGGER == 2) confocalDigitalSync();
+  else confocalAnalogSync();
+}
+
+void confocalDigitalSync(){
+  PORTD = LEDstate0; //Set LED to standby state
+  while ((boolean) (PIND & B00100000) == SHUTTERTRIGGERPOL){ //While shutter is open - continue using mirror sync  
+    if(DTRIGGERPOL) while(~PIND & B01000000); //Wait for sync trigger
+    else while(PIND & B01000000); //Wait for sync trigger
+    //delayMicroseconds(DELAY1);
+    PORTD = LEDstate1; //Set LED to post trigger state
+    delayMicroseconds(DELAY2);
+    PORTD = LEDstate0; //Set LED to standby state
+    checkStatus();
+  }
+  confocalStandby();
+}
+
+void confocalAnalogSync(){
+  
+}
+
+void eventHandler(){
+  if(event==1) processReceivedPackets();
+  else if(event==2); //---------------------------TOGGLE EVENT
+  else if(event==3) failSafe();
+  event = 0; //Reset event handler
 }
 
 void initializeDevice(){
@@ -210,6 +262,7 @@ void checkStatus(){
     } 
   }
   if(SYNCTYPE) noInterrupts(); //Turn interrupts back off if in confocal mode - removes 5us jitter in sync timing
+  if(event) eventHandler(); //If an event was found - run the event handler
 }
 
 //Assemble header onto packet
@@ -288,7 +341,7 @@ void setupPacket(){
   for(a=rxStart+HEADER; a<rxStart + SETUPSIZE; a++){
     checkSum += rxBuffer[a];
   }
-for(a=rxIndex; a < rxIndex+SETUPSIZE; a++) Serial.write(rxBuffer[a]);
+  for(a=rxIndex; a < rxIndex+SETUPSIZE; a++) Serial.write(rxBuffer[a]);
   Serial.write(checkSum);
   Serial.write(checkSum);
   Serial.write(rxBuffer[rxStart+3]);
@@ -305,10 +358,10 @@ for(a=rxIndex; a < rxIndex+SETUPSIZE; a++) Serial.write(rxBuffer[a]);
   FAULTTEMP[2] = rxBuffer[rxStart++];
   bytesToUint16.bValue[0] = rxBuffer[rxStart++]; //Assemble uint16_t value
   bytesToUint16.bValue[1] = rxBuffer[rxStart++]; //Assemble uint16_t value
-  ONDELAY = bytesToUint16.value; //Delay from previous event before LED is turned on
+  DELAY1 = bytesToUint16.value; //Delay from previous event before LED is turned on
   bytesToUint16.bValue[0] = rxBuffer[rxStart++]; //Assemble uint16_t value
   bytesToUint16.bValue[1] = rxBuffer[rxStart++]; //Assemble uint16_t value
-  OFFDELAY = bytesToUint16.value; //Delay from previous event before LED is turned off
+  DELAY2 = bytesToUint16.value; //Delay from previous event before LED is turned off
   DELAYORDER = rxBuffer[rxStart++]; //Order of delays before trigger (0 = LED starts off, 1 = LED starts on);
   DELAYUNITS = rxBuffer[rxStart++]; //us or ms delay - confocal sync will always use us - us is also capped at 16383 (0 = us; 1 = ms)
   FANMINTEMP = rxBuffer[rxStart++]; //LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
@@ -321,8 +374,9 @@ for(a=rxIndex; a < rxIndex+SETUPSIZE; a++) Serial.write(rxBuffer[a]);
   PWMFAN = rxBuffer[rxStart++]; //Digital I/O as PWM fan controller (0=N/A, 1=on)   
   FANPIN = rxBuffer[rxStart++] & B01100000; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
   SYNCTYPE = rxBuffer[rxStart++]; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
-  DTRIGGERPOL = rxBuffer[rxStart++]; //digital trigger polarity (0 = High, 1 = Low)
+  DTRIGGERPOL = rxBuffer[rxStart++]; //digital trigger polarity (0 = Low, 1 = High)
   ATRIGGERPOL = rxBuffer[rxStart++]; //analog trigger polarity (0 = Rising, 1 = Falling)
+  SHUTTERTRIGGERPOL = 0; //Shutter trigger polarity (0 = Low, 1 = High) - only used for confocal syncs
   LEDSOURCE = rxBuffer[rxStart++]; //LED intensity signal source (0 = Ext source, 1 = AWG source)
   TRIGHOLD = rxBuffer[rxStart++]; //trigger hold (0 = single shot, 1 = repeat until trigger resets), 
   AWGSOURCE = rxBuffer[rxStart++]; //AWG source (0=txPacket, 1=mirror the intensity knob),             
@@ -339,27 +393,28 @@ void checkSetup(){
   }
 
   //Check that packet values are valid
-  if(FANMAXTEMP < FANMINTEMP && TRIGGER < 4 && (ANALOGSEL-3) < 2 && FAULTVOLUME < 128 && STARTVOLUME < 128){ //Check numerical values for validity
+  if(FANMAXTEMP < FANMINTEMP && TRIGGER < 3 && (ANALOGSEL-3) < 2 && FAULTVOLUME < 128 && STARTVOLUME < 128){ //Check numerical values for validity
     if((!FAULTLED || FAULTLED == 4) && (!FANPIN || FANPIN == 32 || FANPIN == 64) && (!SYNCOUT || SYNCOUT == 64)){ //Check pin ID variables
       if(DELAYORDER < 2 && DELAYUNITS < 2 && PWMFAN < 2 && SYNCTYPE < 2 && DTRIGGERPOL < 2 && ATRIGGERPOL < 2 && LEDSOURCE < 2 && TRIGHOLD < 2 && AWGSOURCE < 2 && SYNCOUT < 2){ //Check boolean variables - d
         if((!SYNCTYPE == DELAYUNITS) || !SYNCTYPE){ //Confirm that the delay units are in us if using a confocal sync
-          if((!DELAYUNITS && (ONDELAY < 16384 && OFFDELAY < 16384)) || DELAYUNITS){ //If us, make sure that value does not exceed 16383 cap - https://www.arduino.cc/reference/en/language/functions/time/delaymicroseconds/
-            for(a=rxIndex; a < rxIndex+SETUPSIZE; a++) txPacket[a-rxIndex] = rxBuffer[a];
-            Serial.write(txPacket, SETUPSIZE); //Send received setup back back to computer for confirmation
-                        
-            //If setup is valid, then initialization is successful
-            initialized = true;
-            SPI.end(); //End SPI so that locks on warning LED and buzzer are released
-            PORTB |= FAULTLED; //Turn on warning LED
-            for(a=0; a<500; a++){ //Generate tone for 0.1 seconds
-              PORTB |= B00010000;
-              delayMicroseconds(STARTVOLUME);
-              PORTB &= B11101111;
-              delayMicroseconds(255-STARTVOLUME);
-            }
-            delay(1000); //Wait for reset from GUI in case setup packet does not match
-            PORTB &= B11111011; //Turn off warning LED
-            SPI.begin(); //Re-start SPI  
+          if((!DELAYUNITS && (DELAY1 < 16384 && DELAY2 < 16384)) || DELAYUNITS){ //If us, make sure that value does not exceed 16383 cap - https://www.arduino.cc/reference/en/language/functions/time/delaymicroseconds/
+            if(!SYNCTYPE || TRIGGER){ //Only analog or digital triggers for confocal
+              for(a=rxIndex; a < rxIndex+SETUPSIZE; a++) txPacket[a-rxIndex] = rxBuffer[a];
+              Serial.write(txPacket, SETUPSIZE); //Send received setup back back to computer for confirmation               
+              //If setup is valid, then initialization is successful
+              initialized = true;
+              SPI.end(); //End SPI so that locks on warning LED and buzzer are released
+              PORTB |= FAULTLED; //Turn on warning LED
+              for(a=0; a<500; a++){ //Generate tone for 0.1 seconds
+                PORTB |= B00010000;
+                delayMicroseconds(STARTVOLUME);
+                PORTB &= B11101111;
+                delayMicroseconds(255-STARTVOLUME);
+              }
+              delay(1000); //Wait for reset from GUI in case setup packet does not match
+              PORTB &= B11111011; //Turn off warning LED
+              SPI.begin(); //Re-start SPI 
+            } 
           }
         }                    
       }
@@ -409,7 +464,6 @@ void failSafe(){
   PORTB = PORTBstate; //Restore ports to prior configurations
   PORTD = PORTDstate;
   TIMSK0 = TIMSK0state; //Restore Timer0 interrupt settings
-  taskIndex = 0; //Reset the task index
 }
 
 uint8_t adjustVolume(){//--------------------------------------------------------------------------------------------------------------FINISH INSTALLING THIS SO VOLUME CAN BE ADJUSTED USING KNOB ON PANEL----------------------------------------------------
