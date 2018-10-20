@@ -8,20 +8,22 @@ void setup() {
   PORTD |= B10010000; //Set pins 4 and 7 high
   PORTD &= B11110111; //Set pin 3 low
   SPI.begin();
-  PORTB &= B11111100;
+  PORTB &= B11111110;
   SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE0));
-  SPI.transfer16(256+255);
+  SPI.transfer16(256);
   SPI.endTransaction();
   PORTB |= B00000001;
-  updateAWG(0);
-
+  updateAWG(50);
+  noInterrupts();
 }
 
 void loop() {
 PORTD = B11110100;
-delayMicroseconds(a);
+delayMicroseconds(2);
+//delay(1000);
 PORTD = B11111100;
-delayMicroseconds(a);
+delayMicroseconds(2);
+//delay(1000);
 }
 
 void updateAWG(uint8_t awg){

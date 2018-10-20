@@ -30,13 +30,15 @@ const uint8_t STATUSPACKET = 6; //Identifies packet as temperature recordings an
 const uint8_t FAULTPACKET = 10; //Identifies packet as driver entering or exiting fault state - or if received, then commanding driver to enter fault state (i.e. fault test)
 const uint8_t RESETPACKET = 11; //Identifies packet commanding driver to reset
 const uint8_t DISCONNECTPACKET = 12; //Identifies packet commanding driver to reset
+const uint8_t AWGPACKET = 13; //Identifies packet commanding change in AWG
 const uint8_t SETUPPACKET = 31; //Identifies packet as receiving setup configuration information - also is number of data bytes in packet
 const uint8_t HEADER = 4; //Indentifies length of header
 const uint8_t WAVEPACKET = 250+HEADER; //Identifies packet as recorded analog waveform - also is number of bytes in packet
 const uint8_t IDSIZE = sizeof(IDARRAY) + HEADER; //Size of ID packet
 const uint8_t SETUPSIZE = SETUPPACKET+HEADER; //Expected size of recieved setup packet, see byte order below:
 const uint8_t COMMANDSIZE = 1+HEADER; //Commands are just one byte in length after the header
-const long TIMEOUT = (long) (((1000/(float) BAUDRATE)*(64*8)) + 1000); //Wait the expected time needed to fill the serial buffer (64 bytes in size) plus a fixed delay of 0.1s to allow the GUI to respond
+const long INITIALTIMEOUT = (long) (((1000/(float) BAUDRATE)*(64*8)) + 100); //Wait the expected time needed to fill the serial buffer (64 bytes in size) plus a fixed delay of 0.1s to allow the GUI to respond
+const long RUNTIMEOUT = (long) (((1000/(float) BAUDRATE)*(5*8)) + 1); //Wait the expected time needed to fill the serial buffer (64 bytes in size) plus a fixed delay of 0.1s to allow the GUI to respond
 
 //Setup variables
 uint8_t WARNTEMP[] = {98, 98, 98}; //warn temps, warn of overheating at 60oC (60oC = 98 on 8-bit ADC)
@@ -59,7 +61,7 @@ boolean SYNCTYPE = 1; //sync type (0=regular, 1=confocal sync (pipeline syncs th
 boolean DTRIGGERPOL = 1; //digital trigger polarity (0 = Low, 1 = High)
 boolean ATRIGGERPOL = 0; //analog trigger polarity (0 = Falling, 1 = Rising)
 boolean SHUTTERTRIGGERPOL = 1; //Shutter trigger polarity (0 = Low, 1 = High) - only used for confocal syncs
-boolean LEDSOURCE = 0; //LED intensity signal source (0 = Ext source, 1 = AWG source)
+boolean LEDSOURCE = 1; //LED intensity signal source (0 = Ext source, 1 = AWG source)
 boolean TRIGHOLD = 0; //trigger hold (0 = single shot, 1 = repeat until trigger resets), 
 boolean AWGSOURCE = 0; //AWG source (0=rxPacket, 1=mirror the intensity knob),             
 uint8_t SYNCOUT = 0; //Digital I/O 2 as sync out (0=false, 64=true)
@@ -82,7 +84,6 @@ boolean syncStatus = false; //Flag for tracking if actively triggering LED or in
 uint8_t toggleSwitch = 0; //FLag for tracking position of toggle switch - B00000000 = off, B00000100 = on
 volatile boolean updateStatus = false; //Flag set by interrupt to check status - volatile variable as it resides in an interrupt
 uint8_t nTry = 0; //Number of sttempts made at connecting to GUI
-boolean ledOn = 0; //Variable for tracking whether the LED is on
 uint8_t LEDstate0 = 0; //Variable for the state the LED is in before trigger (PORTB bitmask)
 uint8_t LEDstate1 = 0; //Variable for the state the LED is in after trigger (PORTB bitmask)
 
@@ -126,7 +127,7 @@ void setup() {
   
   //Configure digital pins
   DDRB |= B00111111; //Set all pins as output
-  PORTB &= B11000000; //Set all pins low
+  PORTB &= B11000010; //Set all pins low except pin 9 which powers the input to the AWG
   DDRD |= B11111000; //Set all pins but USB and toggle switch as output
 
   //Configure analog switch to negative supply so that LED stays off during initialization
@@ -137,40 +138,33 @@ void setup() {
   //TIMSK0 |= _BV(OCIE0A); //Otherwise set interrupt to "Compare A" if not d
 
   Serial.begin(BAUDRATE);
-  Serial.setTimeout(TIMEOUT); 
+  Serial.setTimeout(INITIALTIMEOUT);
   initializeDevice();
 }
 
-//Loop will act as sync router
+//--------------------------------------------------------------SYNCS----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//Loop will act as sync router based on toggle switch position
 void loop() {
-  SPI.end();
-  if(DELAYORDER){ //If LED is to be turned off on trigger
-    LEDstate1 = B11111100; //Turn off LED on trigger
-    if(LEDSOURCE) LEDstate0 = B11110100; //Set to AWG before trigger
-    else LEDstate0 = B11101100; //Set to EXT before trigger
-  }
-  else{ //If LED is to be turned on on trigger
-    LEDstate0 = B11111100; //Turn off LED before trigger
-    if(LEDSOURCE) LEDstate1 = B11110100; //Set to AWG after trigger
-    else LEDstate1 = B11101100; //Set to EXT after trigger
-  }
-  
-  if(SYNCTYPE){ //Confocal sync pipeline - i.e. no interrupts during mirror sync - iterrupts on during standby
-    DDRD &= B11011111; //Set Digital I/O 1 to input to get shutter trigger 
-    if(TRIGGER == 2) DDRD &= B10011111; //If digital mirror sync, then also set digital I/O 2 to input
-    confocalStandby();
+  event = 0; //Reset the event flag
+  if(toggleSwitch) manualMode(); //If toggle switch is in manual mode, then revert to manual control of the LED 
+  else{
+    if(SYNCTYPE){ //Confocal sync pipeline - i.e. no interrupts during mirror sync - iterrupts on during standby
+      DDRD &= B11011111; //Set Digital I/O 1 to input to get shutter trigger 
+      if(TRIGGER == 2) DDRD &= B10011111; //If digital mirror sync, then also set digital I/O 2 to input
+      confocalStandby();
+    }
   }
 }
 
 //Wait for digital trigger event (usually shutter) to start mirror sync
 void confocalStandby(){
+  updateAWG(255);//XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   PORTD = LEDstate0; //Set LED to standby state
   while((boolean) (PIND & B00100000) != SHUTTERTRIGGERPOL){
-PORTB |= B00100000;//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     interrupts(); //Turn on interrupts to automatically manage checking status
-    if(updateStatus) checkStatus(); //Standby while the digital pin is opposite the 
+    if(updateStatus) checkStatus();
+    if(event) return; //If event is a toogle event break loop and exit function 
   }
-PORTB &= B11011111;//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   noInterrupts(); //Turn off interrupts to keep precise timing during trigger syncs
   if(TRIGGER == 2) confocalDigitalSync();
   else confocalAnalogSync();
@@ -186,6 +180,7 @@ void confocalDigitalSync(){
     delayMicroseconds(DELAY2);
     PORTD = LEDstate0; //Set LED to standby state
     checkStatus();
+    if(event) return; //If event is a toogle event break loop and exit function
   }
   confocalStandby();
 }
@@ -201,46 +196,12 @@ void confocalAnalogSync(){
     delayMicroseconds(DELAY2);
     PORTD = LEDstate0; //Set LED to standby state
     checkStatus();
+    if(event) return; //If event is a toogle event break loop and exit function
     analogRead(ANALOGSEL); //Refresh analog sync pin
   }
   confocalStandby(); 
 }
 
-void eventHandler(){
-  if(event==1) processReceivedPackets();
-  else if(event==2); //---------------------------TOGGLE EVENT
-  else if(event==3) failSafe();
-  event = 0; //Reset event handler
-}
-
-void initializeDevice(){
-  initialized = false;
-  nTry = NINITIALIZE;
-  while(Serial.available()) Serial.read(); //Flush all remaining bytes from input buffer
-  while(!initialized){ //Repeat initialization until a successful initialization 
-    while(Serial.read() && nTry){ //Keep sending header until 0 is received (no data = -1 which is "true") or counter reaches 0;
-      for(a=HEADER; a<IDSIZE; a++) txPacket[a] = IDARRAY[a-HEADER]; //Load ID into txPacket
-      buildPacket(IDPACKET, IDSIZE); //Add header
-      Serial.write(txPacket, IDSIZE); //Send assembled data packet to GUI
-      packetError();
-      nTry--;
-    }
-    if(!initialized && !nTry){ //If a valid setup packet was not found after n tries, use default values
-      checkSetup(); //make sure default values are valid, and boot from them
-      if(initialized && NOSERIAL) Serial.end(); //If default is valid and no serial is requested in manual mode, turn off serial
-      nTry = NINITIALIZE; //Reset the retry counter
-    }
-    else processReceivedPackets(); //If there was a successful connection, try and get the incoming setup packet or disconnect packet
-  }
-
-  //Once initialized, turn on interrupts to begin monitoring the device
-  TIMSK0 |= _BV(OCIE0A);
-
-  //Disable serial if in manual mode and NOSERIAL is true
- 
-}
-
-//Index for recording current position in background tasks 0-2 - record temperatures, 3 - record knob, 4 - sync status (on/off), 5-toggle switch, 6-build header, 7-17 - send byte[n-7]
 void checkStatus(){
   taskIndex++; //Increment task index
   updateStatus = false; //Reset status flag
@@ -278,73 +239,65 @@ void checkStatus(){
   if(event) eventHandler(); //If an event was found - run the event handler
 }
 
-//Assemble header onto packet
-//Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
-void buildPacket(uint8_t identifier, uint8_t packetSize){
-  checkSum = 0; //Initialize the checksum
-  txPacket[0] = STARTBYTE;
-  txPacket[1] = identifier; //Add identifier to data packet
-  txPacket[2] = packetSize; //Add packet length to data packet
-  for(a=HEADER; a<packetSize; a++) checkSum += txPacket[a]; //Calculate checksum
-  txPacket[3] = checkSum; //Add checksum to data packet
-}
-
-//To minimize lag, retrieve only one byte per call, then scan for valid packet.
-//byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet length -> byte(3) checksum -> byte(4-n) data packet;
-//const uint8_t STARTBYTE = 0; //Identifies start of packet
-//const uint8_t IDPACKET = 1; //Identifies packet as device identification packet
-//const uint8_t STATUSPACKET = 6; //Identifies packet as temperature recordings - also is number of data bytes in packet
-//const uint8_t FAULTPACKET = 10; //Identifies packet as driver entering or exiting fault state - or if received, then commanding driver to enter fault state (i.e. fault test)
-//const uint8_t RESETPACKET = 11; //Identifies packet commanding driver to reset
-//const uint8_t DISCONNECTPACKET = 12; //Identifies packet commanding driver to reset
-//const uint8_t WAVEPACKET = 252; //Identifies packet as recorded analog waveform
-
-void processReceivedPackets(){
-  uint8_t packetLength = 0;
-  if(!initialized){
-    packetLength = Serial.readBytes(rxBuffer, 64); //If not initialized, retrieve the entire rx serial buffer
-    if(packetLength >= HEADER+1){ //If minimum number of necessary bytes were recieved, check buffer for setup packet
-      for(a=0; a<=(packetLength-HEADER-1); a++){ //Search for valid header in packet
-        if(!rxBuffer[a]){ //If start byte is found, check for valid packet
-          if(rxBuffer[a+1] == SETUPPACKET && rxBuffer[a+2] == SETUPSIZE && a <= (packetLength - SETUPSIZE + 1)){ //if packet has valid status packet header - parse packet
-             rxStart = a; //Initialize rxStart to current index
-             rxIndex = a; //Initialize rxIndex to current index (will slide rxIndex to end of packet during confrimation process)
-             setupPacket();
-             return; //Break loop if setup packet is found
-          }
-          //Otherwise, if a command of disconnect is received (i.e. GUI initialization) then wait in standby
-          else if(rxBuffer[a+1] == DISCONNECTPACKET && rxBuffer[a+2] == COMMANDSIZE && rxBuffer[a+3] == DISCONNECTPACKET && rxBuffer[a+4] == DISCONNECTPACKET && a <= (packetLength - COMMANDSIZE)) driverStandby();
-        }
-      }
-    }
-  }
-  else{
-    packetLength = Serial.readBytes(rxBuffer, 64); //If not initialized, retrieve the entire rx serial buffer
-    if(packetLength >= HEADER+1){ //If minimum number of necessary bytes were recieved, check buffer for setup packet
-      for(a=0; a<=(packetLength-HEADER-1); a++){ //Search for valid header in packet
-        if(!rxBuffer[a]){ //If start byte is found, check for valid packet
-          //Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
-          if(rxBuffer[a] == 0 && rxBuffer[a+1] == rxBuffer[a+HEADER] && rxBuffer[a+2] == COMMANDSIZE && rxBuffer[a+3] == rxBuffer[a+HEADER]){ //If header is valid, parse the command
-            if(rxBuffer[a+HEADER] == DISCONNECTPACKET) driverStandby(); //If disconnect is received, stop driver until reconnect resets driver.  This keeps driver from spamming serial buffer
-            else if(rxBuffer[a+HEADER] == RESETPACKET) resetPacket(); //If reset command is received, set program line index to and reinitialize driver without hard reset
-            else if(rxBuffer[a+HEADER] == FAULTPACKET) failSafe(); //If fault command is received, enter failsafe (i.e. failsafe test). 
-          }          
-        }
-      }
-    }
+void eventHandler(){ //Take no action on event 2 as the calling function needs to clear first to avoid infinite recursion
+  if(event != 2){
+    if(event==1) processReceivedPackets();
+    else if(event==3) failSafe();
+    event = 0; //Reset event handler
   }
 }
 
-void driverStandby(){
-  PORTD |= B00011000; //Set analog swich to negative voltage output - this will force the LED off (due to rail offset - grounding the LED would still leave LED with low current)
-  PORTB |= B00100000; //Turn on LED 13 to indicate standby
-  Serial.end(); //Stop serial communication so Arduino does not spam output buffer
-  SPI.end(); //Stop SPI to restore access to PORTB
-  TIMSK0 |= _BV(OCIE0A); //Turn interrupts on to continue monitoring driver temperature - and alarm if overtemp
-  while(1){ //Hold until reset
-    delay(1);
-    checkStatus();
+//--------------------------------------------------------------INITIALIZE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+void initializeDevice(){
+  initialized = false;
+  nTry = NINITIALIZE;
+  while(Serial.available()) Serial.read(); //Flush all remaining bytes from input buffer
+  while(!initialized){ //Repeat initialization until a successful initialization 
+    while(Serial.read() && nTry){ //Keep sending header until 0 is received (no data = -1 which is "true") or counter reaches 0;
+      for(a=HEADER; a<IDSIZE; a++) txPacket[a] = IDARRAY[a-HEADER]; //Load ID into txPacket
+      buildPacket(IDPACKET, IDSIZE); //Add header
+      Serial.write(txPacket, IDSIZE); //Send assembled data packet to GUI
+      packetError();
+      nTry--;
+    }
+    if(!initialized && !nTry){ //If a valid setup packet was not found after n tries, use default values
+      checkSetup(); //make sure default values are valid, and boot from them
+      if(initialized && NOSERIAL) Serial.end(); //If default is valid and no serial is requested in manual mode, turn off serial
+      nTry = NINITIALIZE; //Reset the retry counter
+    }
+    else processReceivedPackets(); //If there was a successful connection, try and get the incoming setup packet or disconnect packet
   }
+
+  //Once initialized, turn on interrupts to begin monitoring the device
+  TIMSK0 |= _BV(OCIE0A);
+
+  //Speed up serial as commands will take 160us to transmit
+  Serial.setTimeout(RUNTIMEOUT);
+
+  //Disable serial if in manual mode and NOSERIAL is true
+  if(NOSERIAL) Serial.end();
+
+  //Build LED state variables to toggle LED as specified
+  if(DELAYORDER){ //If LED is to be turned off on trigger
+    LEDstate1 = B11111100; //Turn off LED on trigger (NEG)
+    if(LEDSOURCE) LEDstate0 = B11110100; //Set to AWG before trigger
+    else LEDstate0 = B11101100; //Set to EXT before trigger
+  }
+  else{ //If LED is to be turned on on trigger
+    LEDstate0 = B11111100; //Turn off LED before trigger (NEG)
+    if(LEDSOURCE) LEDstate1 = B11110100; //Set to AWG after trigger
+    else LEDstate1 = B11101100; //Set to EXT after trigger
+  }
+
+  //Set second resistor on AWG to 0 ohms
+  PORTB &= B11111110;
+  SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE0));
+  SPI.transfer16(256);
+  SPI.endTransaction();
+  PORTB |= B00000001;
+
+  //Get state of toggle switch
+  toggleSwitch = (PIND & B00000100);
 }
 
 //Parse the setup packet and then check if valid
@@ -409,9 +362,9 @@ void checkSetup(){
   }
 
   //Check that packet values are valid
-  if(FANMAXTEMP < FANMINTEMP && TRIGGER < 3 && (ANALOGSEL-3) < 2 && FAULTVOLUME < 128 && STARTVOLUME < 128){ //Check numerical values for validity
+  if(FANMAXTEMP < FANMINTEMP && TRIGGER < 3 && (ANALOGSEL-3) < 2 && FAULTVOLUME < 128 && STARTVOLUME < 128 && ATHRESHOLD < 1024){ //Check numerical values for validity
     if((!FAULTLED || FAULTLED == 4) && (!FANPIN || FANPIN == 32 || FANPIN == 64) && (!SYNCOUT || SYNCOUT == 64)){ //Check pin ID variables
-      if(DELAYORDER < 2 && DELAYUNITS < 2 && PWMFAN < 2 && SYNCTYPE < 2 && DTRIGGERPOL < 2 && ATRIGGERPOL < 2 && LEDSOURCE < 2 && TRIGHOLD < 2 && AWGSOURCE < 2 && SYNCOUT < 2){ //Check boolean variables - d
+      if(DELAYORDER < 2 && DELAYUNITS < 2 && PWMFAN < 2 && SYNCTYPE < 2 && DTRIGGERPOL < 2 && ATRIGGERPOL < 2 && SHUTTERTRIGGERPOL < 2 && LEDSOURCE < 2 && TRIGHOLD < 2 && AWGSOURCE < 2 && SYNCOUT < 2){ //Check boolean variables - d
         if((!SYNCTYPE == DELAYUNITS) || !SYNCTYPE){ //Confirm that the delay units are in us if using a confocal sync
           if((!DELAYUNITS && (DELAY1 < 16384 && DELAY2 < 16384)) || DELAYUNITS){ //If us, make sure that value does not exceed 16383 cap - https://www.arduino.cc/reference/en/language/functions/time/delaymicroseconds/
             if(!SYNCTYPE || TRIGGER){ //Only analog or digital triggers for confocal
@@ -435,6 +388,90 @@ void checkSetup(){
         }                    
       }
     }
+  }
+}
+
+
+//--------------------------------------------------------------SERIAL---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+//Assemble header onto packet
+//Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
+void buildPacket(uint8_t identifier, uint8_t packetSize){
+  checkSum = 0; //Initialize the checksum
+  txPacket[0] = STARTBYTE;
+  txPacket[1] = identifier; //Add identifier to data packet
+  txPacket[2] = packetSize; //Add packet length to data packet
+  for(a=HEADER; a<packetSize; a++) checkSum += txPacket[a]; //Calculate checksum
+  txPacket[3] = checkSum; //Add checksum to data packet
+}
+
+//To minimize lag, retrieve only one byte per call, then scan for valid packet.
+//byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet length -> byte(3) checksum -> byte(4-n) data packet;
+//const uint8_t STARTBYTE = 0; //Identifies start of packet
+//const uint8_t IDPACKET = 1; //Identifies packet as device identification packet
+//const uint8_t STATUSPACKET = 6; //Identifies packet as temperature recordings - also is number of data bytes in packet
+//const uint8_t FAULTPACKET = 10; //Identifies packet as driver entering or exiting fault state - or if received, then commanding driver to enter fault state (i.e. fault test)
+//const uint8_t RESETPACKET = 11; //Identifies packet commanding driver to reset
+//const uint8_t DISCONNECTPACKET = 12; //Identifies packet commanding driver to reset
+//const uint8_t WAVEPACKET = 252; //Identifies packet as recorded analog waveform
+
+void processReceivedPackets(){
+  uint8_t packetLength = 0;
+  if(!initialized){
+    packetLength = Serial.readBytes(rxBuffer, 64); //If not initialized, retrieve the entire rx serial buffer
+    if(packetLength >= HEADER+1){ //If minimum number of necessary bytes were recieved, check buffer for setup packet
+      for(a=0; a<=(packetLength-HEADER-1); a++){ //Search for valid header in packet
+        if(!rxBuffer[a]){ //If start byte is found, check for valid packet
+          if(rxBuffer[a+1] == SETUPPACKET && rxBuffer[a+2] == SETUPSIZE && a <= (packetLength - SETUPSIZE + 1)){ //if packet has valid status packet header - parse packet
+             rxStart = a; //Initialize rxStart to current index
+             rxIndex = a; //Initialize rxIndex to current index (will slide rxIndex to end of packet during confrimation process)
+             setupPacket();
+             return; //Break loop if setup packet is found
+          }
+          //Otherwise, if a command of disconnect is received (i.e. GUI initialization) then wait in standby
+          else if(rxBuffer[a+1] == DISCONNECTPACKET && rxBuffer[a+2] == COMMANDSIZE && rxBuffer[a+3] == DISCONNECTPACKET && rxBuffer[a+4] == DISCONNECTPACKET && a <= (packetLength - COMMANDSIZE)) driverStandby();
+        }
+      }
+    }
+  }
+  else{
+    packetLength = Serial.readBytes(rxBuffer, 64); //If not initialized, retrieve the entire rx serial buffer
+    if(packetLength >= HEADER+1){ //If minimum number of necessary bytes were recieved, check buffer for setup packet
+      for(a=0; a<=(packetLength-HEADER-1); a++){ //Search for valid header in packet
+        if(!rxBuffer[a]){ //If start byte is found, check for valid packet
+          //Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
+          if(rxBuffer[a] == 0 && rxBuffer[a+2] == COMMANDSIZE && rxBuffer[a+3] == rxBuffer[a+HEADER]){ //If header is valid, parse the command
+            if(rxBuffer[a+1] == rxBuffer[a+HEADER]){ //If command is fixed command with no value (i.e. databyte = ID) 
+              if(rxBuffer[a+HEADER] == DISCONNECTPACKET) driverStandby(); //If disconnect is received, stop driver until reconnect resets driver.  This keeps driver from spamming serial buffer
+              else if(rxBuffer[a+HEADER] == RESETPACKET) resetPacket(); //If reset command is received, set program line index to and reinitialize driver without hard reset
+              else if(rxBuffer[a+HEADER] == FAULTPACKET) failSafe(); //If fault command is received, enter failsafe (i.e. failsafe test). 
+            }
+            else{
+              if(rxBuffer[a+1] == AWGPACKET) updateAWG(rxBuffer[a+HEADER]); 
+            }
+          }          
+        }
+      }
+    }
+  }
+}
+
+void updateAWG(uint8_t awg){
+  PORTB &= B11111110;
+  SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE0));
+  SPI.transfer16(awg);
+  SPI.endTransaction();
+  PORTB |= B00000001;
+}
+//--------------------------------------------------------------STATES---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+void driverStandby(){
+  PORTD |= B00011000; //Set analog swich to negative voltage output - this will force the LED off (due to rail offset - grounding the LED would still leave LED with low current)
+  PORTB |= B00100000; //Turn on LED 13 to indicate standby
+  Serial.end(); //Stop serial communication so Arduino does not spam output buffer
+  SPI.end(); //Stop SPI to restore access to PORTB
+  TIMSK0 |= _BV(OCIE0A); //Turn interrupts on to continue monitoring driver temperature - and alarm if overtemp
+  while(1){ //Hold until reset
+    delay(1);
+    checkStatus();
   }
 }
 
@@ -480,6 +517,24 @@ void failSafe(){
   PORTB = PORTBstate; //Restore ports to prior configurations
   PORTD = PORTDstate;
   TIMSK0 = TIMSK0state; //Restore Timer0 interrupt settings
+}
+
+void manualMode(){
+  TIMSK0 |= _BV(OCIE0A); //Turn on millis interrupt timer
+  PORTB |= B00000010;
+  while(!event){ //Loop until toggle switch changes
+    interrupts(); //Maintain interrupts while in manual
+    uint16_t anaRead = 0;
+    for(a=0; a<64; a++){
+      anaRead += analogRead(POT);
+    }
+    anaRead >>= 8; //Convert sum to byte
+    if(anaRead) PORTD = B11110100;
+    else PORTD = B11111100;
+    updateAWG(anaRead);
+    if(updateStatus) checkStatus();
+    analogRead(POT); //Refresh pot
+  }
 }
 
 uint8_t adjustVolume(){//--------------------------------------------------------------------------------------------------------------FINISH INSTALLING THIS SO VOLUME CAN BE ADJUSTED USING KNOB ON PANEL----------------------------------------------------
