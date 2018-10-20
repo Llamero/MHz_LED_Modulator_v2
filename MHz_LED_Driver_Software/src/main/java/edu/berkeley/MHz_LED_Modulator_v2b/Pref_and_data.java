@@ -53,20 +53,22 @@ public final class Pref_and_data {
     private static final int FAULTPACKET = 10; //Identifies packet as command that driver is in fault, or to command driver to enter fault (i.e. fault test)
     private static final int RESETPACKET = 11; //Command to driver to move to first line of code (address 0) - soft restart
     private static final int DISCONNECTPACKET = 12; //Command to driver to enter disconnect status
-    private static final int SETUPPACKET = 28; //Identifies packet as receiving setup configuration information - also is number of data bytes in packet
+    private static final int SETUPPACKET = 31; //Identifies packet as receiving setup configuration information - also is number of data bytes in packet
     private static final int WAVEPACKET = HEADERLENGTH + 250; //Identifies packet as recorded analog waveform
     private static final int CONNECTRETRY = 3; //Number of times to retry a connection to a driver before disconnecting - needs to be less than Arduino retry
     
     //Sync:
-    private static final int ONDELAY = 0; //Delay from previous event before LED is turned on
-    private static final int OFFDELAY = 0; //Delay from previous event before LED is turned off
+    private static final int DELAY1 = 0; //Delay from trigger to LED trigger state
+    private static final int DELAY2 = 0; //Delay from delay 1 to LED standby state
+    private static final int ATHRESHOLD = 0; //Threshold for analog trigger
     private static final int DELAYORDER = 0; //Order of delays before trigger (0 = LED starts off, 1 = LED starts on);
     private static final int DELAYUNITS = 0; //us or ms delay - confocal sync will always use us - us is also capped at 16383.
-    private static final int TRIGGER = 0; //trigger (0=toggle, 1=analog, 2=digital, 3=digital activates analog - such as shutter open then trigger off of fast mirror)
+    private static final int TRIGGER = 0; //trigger (0=toggle, 1=analog, 2=digital - confocal uses separate digital to trigger syncing)
     private static final int ANALOGSEL = 3; //(analog select (3 = diode, 4 = raw) 
     private static final int SYNCTYPE = 0; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
-    private static final int DTRIGGERPOL = 0; //digital trigger polarity (0 = High, 1 = Low)
+    private static final int DTRIGGERPOL = 0; //digital trigger polarity (0 = Low, 1 = High)
     private static final int ATRIGGERPOL = 0; //analog trigger polarity (0 = Rising, 1 = Falling)
+    private static final int SHUTTERTRIGGERPOL = 0; //Shutter trigger polarity (0 = Low, 1 = High) - only used for confocal syncs
     private static final int LEDSOURCE = 0; //LED intensity signal source (0 = Ext source, 1 = AWG source)
     private static final int TRIGHOLD = 0; //trigger hold (0 = single shot, 1 = repeat until trigger resets),
     private static final int AWGSOURCE = 0; //AWG source (0=rxPacket, 1=mirror the intensity knob),  
@@ -108,8 +110,9 @@ public final class Pref_and_data {
 	private static final String RUNREADWAITID = "Run read wait";
 	private static final String RUNSENDWAITID = "Run send wait"; 
     //Sync:
-    private static final String ONDELAYID = "On delay";
-    private static final String OFFDELAYID = "Off delay";
+    private static final String DELAY1ID = "Delay 1";
+    private static final String DELAY2ID = "Delay 2";
+    private static final String ATHRESHOLDID = "Analog Threshold";
     private static final String DELAYORDERID = "Delay order";
     private static final String DELAYUNITSID = "Delay units";
     private static final String TRIGGERID = "Trigger type";
@@ -117,6 +120,7 @@ public final class Pref_and_data {
     private static final String SYNCTYPEID = "Sync type";
     private static final String DTRIGGERPOLID = "Digital polarity";
     private static final String ATRIGGERPOLID = "Analog polarity";
+    private static final String SHUTTERTRIGGERPOLID = "Shutter polarity";
     private static final String LEDSOURCEID = "LED input";
     private static final String TRIGHOLDID = "Trigger hold";
     private static final String AWGSOURCEID = "AWG Source";
@@ -176,15 +180,17 @@ public final class Pref_and_data {
 	private int connectCount = 0; //Number of attempts at connecting to driver
 	private String currentID; //ID of device that is currently connected
     //Sync:
-    private int onDelay; //Delay from previous event before LED is turned on
-    private int offDelay; //Delay from previous event before LED is turned off
+    private int delay1; //Delay from trigger to LED trigger state
+    private int delay2; //Delay from delay 1 to LED standby state
+    private int aThreshold; //Threshold for analog trigger
     private int delayOrder; //Order of delays before trigger (0 = LED starts off, 1 = LED starts on);
     private int delayUnits; //us or ms delay - confocal sync will always use us - us is also capped at 16383.
-    private int trigger; //trigger (0=toggle, 1=analog, 2=digital, 3=digital activates analog - such as shutter open then trigger off of fast mirror)
+    private int trigger; //trigger (0=toggle, 1=analog, 2=digital - confocal uses separate digital to trigger syncing)
     private int analogSel; //(analog select (3 = diode, 4 = raw) 
     private int syncType; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
-    private int dTriggerPol; //digital trigger polarity (0 = High, 1 = Low)
+    private int dTriggerPol; //digital trigger polarity (0 = Low, 1 = High)
     private int aTriggerPol; //analog trigger polarity (0 = Rising, 1 = Falling)
+    private int shutterTriggerPol; //Shutter trigger polarity (0 = Low, 1 = High) - only used for confocal syncs
     private int ledSource; //LED intensity signal source (0 = Ext source, 1 = AWG source)
     private int trigHold; //trigger hold (0 = single shot, 1 = repeat until trigger resets),
     private int awgSource; //AWG source (0=rxPacket, 1=mirror the intensity knob),   
@@ -258,8 +264,9 @@ public final class Pref_and_data {
 		runSendWait = prefs.getInt(RUNSENDWAITID, RUNSENDWAIT);
 		
 	    //Sync:
-	    onDelay = prefs.getInt(ONDELAYID, ONDELAY);
-	    offDelay = prefs.getInt(OFFDELAYID, OFFDELAY);
+	    delay1 = prefs.getInt(DELAY1ID, DELAY1);
+	    delay2 = prefs.getInt(DELAY2ID, DELAY2);
+	    aThreshold = prefs.getInt(ATHRESHOLDID, ATHRESHOLD);
 	    delayOrder = prefs.getInt(DELAYORDERID, DELAYORDER);
 	    delayUnits = prefs.getInt(DELAYUNITSID, DELAYUNITS);
 	    trigger = prefs.getInt(TRIGGERID, TRIGGER);
@@ -267,6 +274,8 @@ public final class Pref_and_data {
 	    syncType = prefs.getInt(SYNCTYPEID, SYNCTYPE);
 	    dTriggerPol = prefs.getInt(DTRIGGERPOLID, DTRIGGERPOL);
 	    aTriggerPol = prefs.getInt(ATRIGGERPOLID, ATRIGGERPOL);
+	    shutterTriggerPol = prefs.getInt(SHUTTERTRIGGERPOLID, SHUTTERTRIGGERPOL);
+	    shutterTriggerPol = prefs.getInt(SHUTTERTRIGGERPOLID, SHUTTERTRIGGERPOL);
 	    ledSource = prefs.getInt(LEDSOURCEID, LEDSOURCE);
 	    trigHold = prefs.getInt(TRIGHOLDID, TRIGHOLD);
 	    awgSource = prefs.getInt(AWGSOURCEID, AWGSOURCE);
@@ -316,8 +325,9 @@ public final class Pref_and_data {
 		prefs.putInt(RUNSENDWAITID, RUNSENDWAIT);
 		
 	    //Sync:
-		prefs.putInt(ONDELAYID, ONDELAY);
-		prefs.putInt(OFFDELAYID, OFFDELAY);
+		prefs.putInt(DELAY1ID, DELAY1);
+		prefs.putInt(DELAY2ID, DELAY2);
+		prefs.putInt(ATHRESHOLDID, ATHRESHOLD);
 		prefs.putInt(DELAYORDERID, DELAYORDER);
 		prefs.putInt(DELAYUNITSID, DELAYUNITS);
 		prefs.putInt(TRIGGERID, TRIGGER);
@@ -325,6 +335,7 @@ public final class Pref_and_data {
 		prefs.putInt(SYNCTYPEID, SYNCTYPE);
 		prefs.putInt(DTRIGGERPOLID, DTRIGGERPOL);
 		prefs.putInt(ATRIGGERPOLID, ATRIGGERPOL);
+		prefs.putInt(SHUTTERTRIGGERPOLID, SHUTTERTRIGGERPOL);
 		prefs.putInt(LEDSOURCEID, LEDSOURCE);
 		prefs.putInt(TRIGHOLDID, TRIGHOLD);
 		prefs.putInt(AWGSOURCEID, AWGSOURCE);
@@ -454,8 +465,8 @@ System.out.println(currentID);
 		//Send single STARTBYTE to confirm receipt of ID and start of SETUP transfer
 		serial.reply(new byte[] {STARTBYTE});
 		gui.updateProgress(66, "Validating setup packet of: " + currentID);
-		byte[] onDelayArray = ByteBuffer.allocate(4).putInt(onDelay).array();
-		byte[] offDelayArray = ByteBuffer.allocate(4).putInt(offDelay).array();
+		byte[] onDelayArray = ByteBuffer.allocate(4).putInt(delay1).array();
+		byte[] offDelayArray = ByteBuffer.allocate(4).putInt(delay2).array();
 		connectCount = 0; //Reset the counter for number of reconnect attempts
 		
 		preferencePacket = new byte[] {
