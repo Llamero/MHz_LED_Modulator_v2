@@ -42,7 +42,7 @@ const long RUNTIMEOUT = (long) (((1000/(float) BAUDRATE)*(5*8)) + 1); //Wait the
 
 //Setup variables
 uint8_t WARNTEMP[] = {98, 98, 98}; //warn temps, warn of overheating at 60oC (60oC = 98 on 8-bit ADC)
-uint8_t FAULTTEMP[] = {0, 0, 0}; //fault temps. enter fault at 80oC (80oC = 66 on 8-bit ADC)
+uint8_t FAULTTEMP[] = {50, 50, 50}; //fault temps. enter fault at 80oC (80oC = 66 on 8-bit ADC)
 uint16_t DELAY1 = 300; //Delay from trigger to LED trigger state
 uint16_t DELAY2 = 300; //Delay from delay 1 to LED standby state
 uint16_t ATHRESHOLD = 500; //Threshold for analog trigger
@@ -61,9 +61,9 @@ boolean SYNCTYPE = 1; //sync type (0=regular, 1=confocal sync (pipeline syncs th
 boolean DTRIGGERPOL = 1; //digital trigger polarity (0 = Low, 1 = High)
 boolean ATRIGGERPOL = 0; //analog trigger polarity (0 = Falling, 1 = Rising)
 boolean SHUTTERTRIGGERPOL = 1; //Shutter trigger polarity (0 = Low, 1 = High) - only used for confocal syncs
-boolean LEDSOURCE = 1; //LED intensity signal source (0 = Ext source, 1 = AWG source)
+boolean LEDSOURCE = 0; //LED intensity signal source (0 = Ext source, 1 = AWG source)
 boolean TRIGHOLD = 0; //trigger hold (0 = single shot, 1 = repeat until trigger resets), 
-boolean AWGSOURCE = 0; //AWG source (0=rxPacket, 1=mirror the intensity knob),             
+uint8_t AWGSOURCE = 0; //AWG source (0=rxPacket, 1=mirror the intensity knob - hold fixed during sync, 2 - live update during sync),             
 uint8_t SYNCOUT = 0; //Digital I/O 2 as sync out (0=false, 64=true)
 
 //Packet structure is: byte(0) STARTBYTE -> byte(1) packet identifier -> byte(2) packet total length -> byte(3) checksum (data only, excluding header) -> byte(4-n) data packet;
@@ -86,6 +86,9 @@ volatile boolean updateStatus = false; //Flag set by interrupt to check status -
 uint8_t nTry = 0; //Number of sttempts made at connecting to GUI
 uint8_t LEDstate0 = 0; //Variable for the state the LED is in before trigger (PORTB bitmask)
 uint8_t LEDstate1 = 0; //Variable for the state the LED is in after trigger (PORTB bitmask)
+uint8_t ledInt = 10;
+boolean fault = false; //Track whether in fault to prevent recursive call of fault state
+uint8_t initialCount = 3; //Don't respond to initial status until ADCs have settled
 
 //PORT D: USB, Switches, Digital I/O
 //0 - USB RX
@@ -158,7 +161,7 @@ void loop() {
 
 //Wait for digital trigger event (usually shutter) to start mirror sync
 void confocalStandby(){
-  updateAWG(255);//XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  updateAWG(ledInt);//XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   PORTD = LEDstate0; //Set LED to standby state
   while((boolean) (PIND & B00100000) != SHUTTERTRIGGERPOL){
     interrupts(); //Turn on interrupts to automatically manage checking status
@@ -203,24 +206,25 @@ void confocalAnalogSync(){
 }
 
 void checkStatus(){
+  if(!taskIndex && initialCount) initialCount--;
   taskIndex++; //Increment task index
   updateStatus = false; //Reset status flag
   if(SYNCTYPE) interrupts(); //Turn interrupts back on if in confocal mode - needed for serial communication
   if(taskIndex >= 0 && taskIndex <= 2){ //Record temperature - 12us
-    analogRead(taskIndex); //Refresh ADC
+    analogRead(taskIndex)>>2;
     txPacket[HEADER + taskIndex] = analogRead(taskIndex)>>2; //Get temperature reading and convert to 8-bit
   }
   else if(taskIndex == 3){ //Get intensity knob position - 12us
     analogRead(POT);
     txPacket[HEADER + taskIndex] = analogRead(POT)>>2;
   }
-  else if(taskIndex >= STATUSPACKET && taskIndex < (2*STATUSPACKET+HEADER)){ //6us
+  else if(taskIndex >= STATUSPACKET && taskIndex < (2*STATUSPACKET+HEADER) && !initialCount){ //6us
     Serial.write(txPacket[taskIndex - STATUSPACKET]);
   }
   else if(taskIndex == 4){ //Perform all fast tasks as one set
     txPacket[HEADER + taskIndex++] = syncStatus;
     txPacket[HEADER + taskIndex] = PIND & B00000100; //Check toggle switch
-    if(txPacket[4] < FAULTTEMP[0] || txPacket[5] < FAULTTEMP[1] || txPacket[6] < FAULTTEMP[2]) event = 3; //Check whether device is overheating and enter failsafe if it is
+    if((txPacket[HEADER] < FAULTTEMP[0] || txPacket[HEADER+1] < FAULTTEMP[1] || txPacket[HEADER+2] < FAULTTEMP[2]) && !initialCount) event = 3; //Check whether device is overheating and enter failsafe if it is
     buildPacket(STATUSPACKET, STATUSPACKET+HEADER);
   }
   //For remainder of checks monitor toggle switch and serial alternately to prevent over-riding event flags if both happen synchronously
@@ -242,7 +246,7 @@ void checkStatus(){
 void eventHandler(){ //Take no action on event 2 as the calling function needs to clear first to avoid infinite recursion
   if(event != 2){
     if(event==1) processReceivedPackets();
-    else if(event==3) failSafe();
+    else if(event==3 && !fault) failSafe();
     event = 0; //Reset event handler
   }
 }
@@ -298,6 +302,7 @@ void initializeDevice(){
 
   //Get state of toggle switch
   toggleSwitch = (PIND & B00000100);
+
 }
 
 //Parse the setup packet and then check if valid
@@ -362,9 +367,9 @@ void checkSetup(){
   }
 
   //Check that packet values are valid
-  if(FANMAXTEMP < FANMINTEMP && TRIGGER < 3 && (ANALOGSEL-3) < 2 && FAULTVOLUME < 128 && STARTVOLUME < 128 && ATHRESHOLD < 1024){ //Check numerical values for validity
+  if(FANMAXTEMP < FANMINTEMP && TRIGGER < 3 && (ANALOGSEL-3) < 2 && FAULTVOLUME < 128 && STARTVOLUME < 128 && ATHRESHOLD < 1024 && AWGSOURCE < 3){ //Check numerical values for validity
     if((!FAULTLED || FAULTLED == 4) && (!FANPIN || FANPIN == 32 || FANPIN == 64) && (!SYNCOUT || SYNCOUT == 64)){ //Check pin ID variables
-      if(DELAYORDER < 2 && DELAYUNITS < 2 && PWMFAN < 2 && SYNCTYPE < 2 && DTRIGGERPOL < 2 && ATRIGGERPOL < 2 && SHUTTERTRIGGERPOL < 2 && LEDSOURCE < 2 && TRIGHOLD < 2 && AWGSOURCE < 2 && SYNCOUT < 2){ //Check boolean variables - d
+      if(DELAYORDER < 2 && DELAYUNITS < 2 && PWMFAN < 2 && SYNCTYPE < 2 && DTRIGGERPOL < 2 && ATRIGGERPOL < 2 && SHUTTERTRIGGERPOL < 2 && LEDSOURCE < 2 && TRIGHOLD < 2 && SYNCOUT < 2){ //Check boolean variables - d
         if((!SYNCTYPE == DELAYUNITS) || !SYNCTYPE){ //Confirm that the delay units are in us if using a confocal sync
           if((!DELAYUNITS && (DELAY1 < 16384 && DELAY2 < 16384)) || DELAYUNITS){ //If us, make sure that value does not exceed 16383 cap - https://www.arduino.cc/reference/en/language/functions/time/delaymicroseconds/
             if(!SYNCTYPE || TRIGGER){ //Only analog or digital triggers for confocal
@@ -478,8 +483,8 @@ void driverStandby(){
 //In the event of the driver or LED overheating, fail safe automatically turns off the LED circuit until the driver/LED both cool to a safe temperature
 void failSafe(){
   uint8_t TIMSK0state = TIMSK0;
+  fault = true;
   TIMSK0 &= ~_BV(OCIE0A); //Turn off interrupts - loop calls check status directly to monitor temp
-  boolean fault = true;
   uint8_t PORTDstate = PORTD; //Record current state of ports so they can be restored after fault
   uint8_t PORTBstate = PORTB;
   
@@ -510,9 +515,9 @@ void failSafe(){
       delayMicroseconds(255);
     }
     checkStatus();
-    if(txPacket[4] > WARNTEMP[0] && txPacket[5] > WARNTEMP[1] && txPacket[6] > WARNTEMP[2]) fault = false; //If all thermistor temps are below the warn temperature, then exit the fault state
+    if(txPacket[HEADER] > WARNTEMP[0] && txPacket[HEADER+1] > WARNTEMP[1] && txPacket[HEADER+2] > WARNTEMP[2]) fault = false; //If all thermistor temps are below the warn temperature, then exit the fault state
   }
-
+  fault = false;
   SPI.begin(); //Restart SPI communication
   PORTB = PORTBstate; //Restore ports to prior configurations
   PORTD = PORTDstate;

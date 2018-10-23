@@ -67,7 +67,7 @@ public final class Pref_and_data {
     private static final int ANALOGSEL = 3; //(analog select (3 = diode, 4 = raw) 
     private static final int SYNCTYPE = 0; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
     private static final int DTRIGGERPOL = 0; //digital trigger polarity (0 = Low, 1 = High)
-    private static final int ATRIGGERPOL = 0; //analog trigger polarity (0 = Rising, 1 = Falling)
+    private static final int ATRIGGERPOL = 0; //analog trigger polarity (0 = Falling, 1 = Rising)
     private static final int SHUTTERTRIGGERPOL = 0; //Shutter trigger polarity (0 = Low, 1 = High) - only used for confocal syncs
     private static final int LEDSOURCE = 0; //LED intensity signal source (0 = Ext source, 1 = AWG source)
     private static final int TRIGHOLD = 0; //trigger hold (0 = single shot, 1 = repeat until trigger resets),
@@ -189,7 +189,7 @@ public final class Pref_and_data {
     private int analogSel; //(analog select (3 = diode, 4 = raw) 
     private int syncType; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
     private int dTriggerPol; //digital trigger polarity (0 = Low, 1 = High)
-    private int aTriggerPol; //analog trigger polarity (0 = Rising, 1 = Falling)
+    private int aTriggerPol; //analog trigger polarity (0 = Falling, 1 = Rising)
     private int shutterTriggerPol; //Shutter trigger polarity (0 = Low, 1 = High) - only used for confocal syncs
     private int ledSource; //LED intensity signal source (0 = Ext source, 1 = AWG source)
     private int trigHold; //trigger hold (0 = single shot, 1 = repeat until trigger resets),
@@ -274,7 +274,6 @@ public final class Pref_and_data {
 	    syncType = prefs.getInt(SYNCTYPEID, SYNCTYPE);
 	    dTriggerPol = prefs.getInt(DTRIGGERPOLID, DTRIGGERPOL);
 	    aTriggerPol = prefs.getInt(ATRIGGERPOLID, ATRIGGERPOL);
-	    shutterTriggerPol = prefs.getInt(SHUTTERTRIGGERPOLID, SHUTTERTRIGGERPOL);
 	    shutterTriggerPol = prefs.getInt(SHUTTERTRIGGERPOLID, SHUTTERTRIGGERPOL);
 	    ledSource = prefs.getInt(LEDSOURCEID, LEDSOURCE);
 	    trigHold = prefs.getInt(TRIGHOLDID, TRIGHOLD);
@@ -467,6 +466,7 @@ System.out.println(currentID);
 		gui.updateProgress(66, "Validating setup packet of: " + currentID);
 		byte[] onDelayArray = ByteBuffer.allocate(4).putInt(delay1).array();
 		byte[] offDelayArray = ByteBuffer.allocate(4).putInt(delay2).array();
+		byte[] aThreshArray = ByteBuffer.allocate(4).putInt(aThreshold).array();
 		connectCount = 0; //Reset the counter for number of reconnect attempts
 		
 		preferencePacket = new byte[] {
@@ -484,6 +484,8 @@ System.out.println(currentID);
 			onDelayArray[3],
 			offDelayArray[2],
 			offDelayArray[3],
+			aThreshArray[2],
+			aThreshArray[3],
 			(byte) delayOrder,
 			(byte) delayUnits,
 			(byte) fanMinTemp,
@@ -498,6 +500,7 @@ System.out.println(currentID);
 			(byte) syncType,
 			(byte) dTriggerPol,
 			(byte) aTriggerPol,
+			(byte) shutterTriggerPol,
 			(byte) ledSource,
 			(byte) trigHold,
 			(byte) awgSource,
