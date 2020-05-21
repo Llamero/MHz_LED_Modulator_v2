@@ -35,8 +35,8 @@ public final class Pref_and_data {
     private static final int ADCMIN = 250; //Maximum valid value on raw temp ADC readings - equal to -40oC
     private static final int FANMINTEMP = 140; //LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
     private static final int FANMAXTEMP = 118; //LED temp above which the PWM fan runs at maximum speed, - default to warn temp  
-    private static final int PWMFAN = 0; //Digital I/O as PWM fan controller (0=N/A, 1=on)
-    private static final int FANPIN = 0; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
+    private static final int FANMIN = 0; //Minimum PWM signal that will start CPU fan (0-255).
+    private static final int FANPIN = 0; //Which digital ouput to use to drive the fan (0=N/A, 5=I/O 1, 6=I/O 2)
 	private static final double[] DEFAULTSTATUS = new double[] {INITIALTEMP,INITIALTEMP,INITIALTEMP,DEFAULTPERCENT, DEFAULTANGLE, -1,-1}; //Initialize status array to impossible values
     
     //Serial
@@ -71,7 +71,7 @@ public final class Pref_and_data {
     private static final int SHUTTERTRIGGERPOL = 0; //Shutter trigger polarity (0 = Low, 1 = High) - only used for confocal syncs
     private static final int LEDSOURCE = 0; //LED intensity signal source (0 = Ext source, 1 = AWG source)
     private static final int TRIGHOLD = 0; //trigger hold (0 = single shot, 1 = repeat until trigger resets),
-    private static final int AWGSOURCE = 0; //AWG source (0=rxPacket, 1=mirror the intensity knob),  
+    private static final int AWGSOURCE = 0; //AWG source (0=rxPacket, 1=mirror the intensity knob - hold fixed during sync, 2 - live update during sync),  
     private static final int SYNCOUT = 0; //Digital I/O 2 as sync out (0=false, 64=true),
     
     //--Standard packets
@@ -100,7 +100,7 @@ public final class Pref_and_data {
     private static final String ADCMINID = "Minimum ADC";
     private static final String FANMINTEMPID = "Fan min temp";
     private static final String FANMAXTEMPID = "Fan max temp";
-    private static final String PWMFANID = "Fan output";
+    private static final String FANMINID = "Minimum PWM";
     private static final String FANPINID = "Fan pin";
     //Serial
     private static final String BAUDID = "Baud rate";
@@ -159,8 +159,8 @@ public final class Pref_and_data {
     private int adcMin; //Minimum valid value on raw temp ADC readings - noise floor on readings that should be 0
     private int fanMinTemp; //LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
     private int fanMaxTemp; //LED temp above which the PWM fan runs at maximum speed, - default to warn temp  
-    private int pwmFan; //Digital I/O as PWM fan controller (0=N/A, 1=on)
-    private int fanPin; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
+    private int fanMin; //Minimum PWM signal that will start CPU fan (0-255).
+    private int fanPin; //Which digital ouput to use to drive the fan (0=N/A, 5=I/O 1, 6=I/O 2)
     //Serial variables
     private int baudRate; //Baud rate of serial communication
     private String preferredPort; //String containing name of preferred port (not port object itself)
@@ -252,7 +252,7 @@ public final class Pref_and_data {
 		adcMin = prefs.getInt(ADCMINID, ADCMIN);
 	    fanMinTemp = prefs.getInt(FANMINTEMPID, FANMINTEMP); 
 	    fanMaxTemp = prefs.getInt(FANMAXTEMPID, FANMAXTEMP); 
-	    pwmFan = prefs.getInt(PWMFANID, PWMFAN); 
+	    fanMin = prefs.getInt(FANMINID, FANMIN); 
 	    fanPin = prefs.getInt(FANPINID, FANPIN); 
 		
 		//Serial
@@ -312,7 +312,7 @@ public final class Pref_and_data {
 		prefs.putInt(ADCMINID, ADCMIN);
 		prefs.putInt(FANMINTEMPID, FANMINTEMP); 
 		prefs.putInt(FANMAXTEMPID, FANMAXTEMP); 
-		prefs.putInt(PWMFANID, PWMFAN); 
+		prefs.putInt(FANMINID, FANMIN); 
 		prefs.putInt(FANPINID, FANPIN); 
 		
 		//Serial
@@ -495,7 +495,7 @@ System.out.println(currentID);
 			(byte) faultLED,
 			(byte) faultVolume,
 			(byte) startVolume,
-			(byte) pwmFan,
+			(byte) fanMin,
 			(byte) fanPin,
 			(byte) syncType,
 			(byte) dTriggerPol,

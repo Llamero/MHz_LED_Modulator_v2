@@ -1,0 +1,33 @@
+G04 Gerber job file with board parameters*
+%TF.FileFunction,JobInfo*%
+%TF.Part,SinglePCB*%
+G04 Single PCB fabrication instructions*
+%TF.GenerationSoftware,KiCad,Pcbnew,(2017-11-06 revision 9df4ae65e)-makepkg*%
+%TF.CreationDate,2018-07-16T22:37:48-07:00*%
+%TF.ProjectId,MHz_LED_Modulator_v2,4D487A5F4C45445F4D6F64756C61746F,rev?*%
+%MOMM*%
+G04 Overall board parameters*
+%TJ.B_Size_X,115.150*%
+%TJ.B_Size_Y,56.150*%
+%TJ.B_LayerNum,2*%
+%TJ.B_Overall_Thickness,1.600*%
+%TJ.B_Legend_Present,Both*%
+%TJ.B_SolderMask_Present,Both*%
+G04 board design rules*
+%TJ.D_PadToPad_Out,0.100*%
+%TJ.D_PadToTrack_Out,0.100*%
+%TJ.D_TrackToTrack_Out,0.150*%
+%TJ.D_MinLineWidth_Out,0.150*%
+%TJ.D_TrackToRegion_Out,0.250*%
+%TJ.D_RegionToRegion_Out,0.250*%
+G04 Layer Structure*
+%TJ.L_"Copper,L1,Top",Positive,MHz_LED_Modulator_v2-F.Cu.gtl*%
+%TJ.L_"Copper,L2,Bot",Positive,MHz_LED_Modulator_v2-B.Cu.gbl*%
+%TJ.L_"SolderPaste,Bot",Positive,MHz_LED_Modulator_v2-B.Paste.gbp*%
+%TJ.L_"SolderPaste,Top",Positive,MHz_LED_Modulator_v2-F.Paste.gtp*%
+%TJ.L_"Legend,Bot",Positive,MHz_LED_Modulator_v2-B.SilkS.gbo*%
+%TJ.L_"Legend,Top",Positive,MHz_LED_Modulator_v2-F.SilkS.gto*%
+%TJ.L_"SolderMask,Bot",Negative,MHz_LED_Modulator_v2-B.Mask.gbs*%
+%TJ.L_"SolderMask,Top",Negative,MHz_LED_Modulator_v2-F.Mask.gts*%
+%TJ.L_"Profile",Positive,MHz_LED_Modulator_v2-Edge.Cuts.gm1*%
+M02*

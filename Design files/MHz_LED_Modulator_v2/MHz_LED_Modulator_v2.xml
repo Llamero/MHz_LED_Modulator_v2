@@ -1,0 +1,2195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="D">
+  <design>
+    <source>D:\CAD designs\Feller Lab\MHz_LED_Modulator-v2\MHz_LED_Modulator_v2\MHz_LED_Modulator_v2.sch</source>
+    <date>7/12/2018 8:58:52 PM</date>
+    <tool>Eeschema (2017-11-06 revision 9df4ae65e)-makepkg</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title/>
+        <company/>
+        <rev/>
+        <date>lun. 30 mars 2015</date>
+        <source>MHz_LED_Modulator_v2.sch</source>
+        <comment number="1" value=""/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="P1">
+      <value>Power</value>
+      <footprint>Socket_Arduino_Uno:Socket_Strip_Arduino_1x08</footprint>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="CONN_01X08"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>56D70129</tstamp>
+    </comp>
+    <comp ref="P2">
+      <value>Analog</value>
+      <footprint>Socket_Arduino_Uno:Socket_Strip_Arduino_1x06</footprint>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="CONN_01X06"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>56D70DD8</tstamp>
+    </comp>
+    <comp ref="P4">
+      <value>Digital</value>
+      <footprint>Socket_Arduino_Uno:Socket_Strip_Arduino_1x08</footprint>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="CONN_01X08"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>56D7164F</tstamp>
+    </comp>
+    <comp ref="P3">
+      <value>Digital</value>
+      <footprint>Socket_Arduino_Uno:Socket_Strip_Arduino_1x10</footprint>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="CONN_01X10"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>56D721E0</tstamp>
+    </comp>
+    <comp ref="OA1">
+      <value>LT6200-10</value>
+      <footprint>TO_SOT_Packages_SMD:SOT-23-6</footprint>
+      <datasheet>http://www.analog.com/media/en/technical-documentation/data-sheets/62001ff.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Linear Technology/Analog Devices</field>
+        <field name="Manufacturer Part #">LT6200CS6-10#TRMPBF</field>
+        <field name="Digikey Part #">LT6200CS6-10#TRMPBFCT-ND</field>
+        <field name="NOTE:">1.6GHz GBWP - 12V Max</field>
+      </fields>
+      <libsource lib="linear" part="MAX4239AUT"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B0661BC</tstamp>
+    </comp>
+    <comp ref="C14">
+      <value>2.2 uF</value>
+      <footprint>Ben_Custom:0508_Capacitor</footprint>
+      <datasheet>http://ds.yuden.co.jp/TYCOMPAS/ut/detail.do?productNo=TWK212B7225MD-T&amp;fileName=TWK212B7225MD-T_SS&amp;mode=specSheetDownload</datasheet>
+      <fields>
+        <field name="Manufacturer">Taiyo Yuden</field>
+        <field name="Manufacturer Part #">TWK212B7225MD-T</field>
+        <field name="Digikey Part #">587-5165-1-ND</field>
+        <field name="NOTE:">Lower GHz impedance than pair of 0402 caps in SPICE</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B06671A</tstamp>
+    </comp>
+    <comp ref="C16">
+      <value>2200 pF</value>
+      <footprint>Capacitors_SMD:C_0603</footprint>
+      <datasheet>https://psearch.en.murata.com/capacitor/product/GCM188R71H222KA37%23.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Murata Electronics North America</field>
+        <field name="Manufacturer Part #">GCM188R71H222KA37D</field>
+        <field name="Digikey Part #">490-4931-1-ND</field>
+        <field name="NOTE:">50V ±10% </field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B088C2D</tstamp>
+    </comp>
+    <comp ref="Q1">
+      <value>Q_NMOS_GDS</value>
+      <footprint>Ben_Custom:IRFH5104_PQFN_5x6b</footprint>
+      <datasheet>https://www.infineon.com/dgdl/irfh5104pbf.pdf?fileId=5546d462533600a40153561add341ea4</datasheet>
+      <fields>
+        <field name="Manufacturer">Infineon Technologies</field>
+        <field name="Manufacturer Part #">IRFH5104TR2PBF</field>
+        <field name="Digikey Part #">IRFH5104TR2PBFCT-ND</field>
+        <field name="NOTE:">40V 100A 114W max - can be replaced with IRFH5006TRPBFCT-ND</field>
+      </fields>
+      <libsource lib="device" part="Q_NMOS_GDS"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B089B04</tstamp>
+    </comp>
+    <comp ref="C20">
+      <value>22 uF</value>
+      <footprint>Ben_Custom:2_J-lead_stacked_cap</footprint>
+      <datasheet>http://psearch.en.murata.com/capacitor/product/KCM55WR71J226MH01%23.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Murata Electronics North America</field>
+        <field name="Manufacturer Part #">KCM55WR71J226MH01K</field>
+        <field name="Digikey Part #">490-5839-1-ND</field>
+        <field name="NOTE:">63V reverse geometry</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B0E5891</tstamp>
+    </comp>
+    <comp ref="C18">
+      <value>22 uF</value>
+      <footprint>Ben_Custom:2_J-lead_stacked_cap</footprint>
+      <datasheet>http://psearch.en.murata.com/capacitor/product/KCM55WR71J226MH01%23.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Murata Electronics North America</field>
+        <field name="Manufacturer Part #">KCM55WR71J226MH01K</field>
+        <field name="Digikey Part #">490-5839-1-ND</field>
+        <field name="NOTE:">63V reverse geometry</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B0E64E4</tstamp>
+    </comp>
+    <comp ref="FL1">
+      <value>4.7uH</value>
+      <footprint>Ben_Custom:Wurth_Coupled_Inductor</footprint>
+      <datasheet>http://katalog.we-online.de/pbs/datasheet/74489440047.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Wurth Electronics Inc.</field>
+        <field name="Manufacturer Part #">74489440047</field>
+        <field name="Digikey Part #">732-2603-1-ND</field>
+        <field name="NOTE:"> </field>
+      </fields>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="Coupled_Inductor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1101AF</tstamp>
+    </comp>
+    <comp ref="Reg1">
+      <value>LT8330</value>
+      <footprint>TO_SOT_Packages_SMD:SOT-23-6</footprint>
+      <datasheet>http://www.analog.com/media/en/technical-documentation/data-sheets/8330fa.pdf?domain=www.linear.com</datasheet>
+      <fields>
+        <field name="Manufacturer">Linear Technology/Analog Devices</field>
+        <field name="Manufacturer Part #">LT8330IS6#TRMPBF</field>
+        <field name="Digikey Part #">LT8330IS6#TRMPBFCT-ND</field>
+        <field name="NOTE:"> </field>
+      </fields>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="LT8330"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B110DCF</tstamp>
+    </comp>
+    <comp ref="C5">
+      <value>1 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>http://ds.yuden.co.jp/TYCOMPAS/ut/detail.do?productNo=HMK212BC7105KG-TE&amp;fileName=HMK212BC7105KG-TE_SS&amp;mode=specSheetDownload</datasheet>
+      <fields>
+        <field name="Manufacturer">Taiyo Yuden</field>
+        <field name="Manufacturer Part #">HMK212BC7105KG-TE</field>
+        <field name="Digikey Part #">587-5018-1-ND</field>
+        <field name="NOTE:">Low ESL (same as 0603) - 100V</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B113287</tstamp>
+    </comp>
+    <comp ref="D1">
+      <value>D_Schottky</value>
+      <footprint>Diodes_SMD:D_SOD-323F</footprint>
+      <datasheet>https://assets.nexperia.com/documents/data-sheet/PMEG6010CEH_PMEG6010CEJ.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Nexperia USA Inc.</field>
+        <field name="Manufacturer Part #">PMEG6010CEJ,115</field>
+        <field name="Digikey Part #">1727-3882-1-ND</field>
+        <field name="NOTE:">Recommended</field>
+      </fields>
+      <libsource lib="device" part="D_Schottky"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B113867</tstamp>
+    </comp>
+    <comp ref="R5">
+      <value>1Meg</value>
+      <footprint>Resistors_SMD:R_0805</footprint>
+      <datasheet>http://www.yageo.com/documents/recent/PYu-RT_1-to-0.01_RoHS_L_9.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Yageo</field>
+        <field name="Manufacturer Part #">RT0805FRE071ML</field>
+        <field name="Digikey Part #">YAG3361CT-ND</field>
+        <field name="NOTE:">50 ppm/oC  ±1%</field>
+      </fields>
+      <libsource lib="device" part="R"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B113D39</tstamp>
+    </comp>
+    <comp ref="R6">
+      <value>154k</value>
+      <footprint>Resistors_SMD:R_0603</footprint>
+      <datasheet>https://industrial.panasonic.com/cdbs/www-data/pdf/RDA0000/AOA0000C304.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Panasonic Electronic Components</field>
+        <field name="Manufacturer Part #">ERJ-3EKF1543V</field>
+        <field name="Digikey Part #">P154KHCT-ND</field>
+        <field name="NOTE:">±1% ±100ppm/°C</field>
+      </fields>
+      <libsource lib="device" part="R"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B113DF9</tstamp>
+    </comp>
+    <comp ref="C1">
+      <value>4.7 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C2012X5R1H475M125AB</datasheet>
+      <fields>
+        <field name="Manufacturer">TDK Corporation</field>
+        <field name="Manufacturer Part #">C2012X5R1H475M125AB</field>
+        <field name="Digikey Part #">445-5981-1-ND</field>
+        <field name="NOTE:"> 50V max - low ESL</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1172BE</tstamp>
+    </comp>
+    <comp ref="FL2">
+      <value>2.7uH</value>
+      <footprint>Ben_Custom:Wurth_Coupled_Inductor</footprint>
+      <datasheet>http://katalog.we-online.de/pbs/datasheet/74489430027.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Wurth Electronics Inc.</field>
+        <field name="Manufacturer Part #">74489430027</field>
+        <field name="Digikey Part #">732-2590-2-ND</field>
+        <field name="NOTE:"> </field>
+      </fields>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="Coupled_Inductor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1179E0</tstamp>
+    </comp>
+    <comp ref="Reg2">
+      <value>LT8330</value>
+      <footprint>TO_SOT_Packages_SMD:SOT-23-6</footprint>
+      <datasheet>http://www.analog.com/media/en/technical-documentation/data-sheets/8330fa.pdf?domain=www.linear.com</datasheet>
+      <fields>
+        <field name="Manufacturer">Linear Technology/Analog Devices</field>
+        <field name="Manufacturer Part #">LT8330IS6#TRMPBF</field>
+        <field name="Digikey Part #">LT8330IS6#TRMPBFCT-ND</field>
+        <field name="NOTE:"> </field>
+      </fields>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="LT8330"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1179EB</tstamp>
+    </comp>
+    <comp ref="D2">
+      <value>D_Schottky</value>
+      <footprint>Diodes_SMD:D_SOD-323F</footprint>
+      <datasheet>https://assets.nexperia.com/documents/data-sheet/PMEG6010CEH_PMEG6010CEJ.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Nexperia USA Inc.</field>
+        <field name="Manufacturer Part #">PMEG6010CEJ,115</field>
+        <field name="Digikey Part #">1727-3882-1-ND</field>
+        <field name="NOTE:">Recommended</field>
+      </fields>
+      <libsource lib="device" part="D_Schottky"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B117A44</tstamp>
+    </comp>
+    <comp ref="R7">
+      <value>1Meg</value>
+      <footprint>Resistors_SMD:R_0805</footprint>
+      <datasheet>http://www.yageo.com/documents/recent/PYu-RT_1-to-0.01_RoHS_L_9.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Yageo</field>
+        <field name="Manufacturer Part #">RT0805FRE071ML</field>
+        <field name="Digikey Part #">YAG3361CT-ND</field>
+        <field name="NOTE:">50 ppm/oC  ±1%</field>
+      </fields>
+      <libsource lib="device" part="R"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B117A4F</tstamp>
+    </comp>
+    <comp ref="RV3">
+      <value>POT_TRIM</value>
+      <footprint>Ben_Custom:Potentiometer_Trimmer_Bourns_3224W</footprint>
+      <datasheet>http://www.bourns.com/docs/Product-Datasheets/3224.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Bourns Inc.</field>
+        <field name="Manufacturer Part #">3224W-1-102E</field>
+        <field name="Digikey Part #">3224W-1-102ECT-ND</field>
+        <field name="NOTE:">1k Ohm ±100ppm/°C 12 turns</field>
+      </fields>
+      <libsource lib="device" part="POT_TRIM"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B11C544</tstamp>
+    </comp>
+    <comp ref="RV2">
+      <value>POT_TRIM</value>
+      <footprint>Ben_Custom:Potentiometer_Trimmer_Bourns_3224W</footprint>
+      <datasheet>http://www.bourns.com/docs/Product-Datasheets/3224.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Bourns Inc.</field>
+        <field name="Manufacturer Part #">3224W-1-201E</field>
+        <field name="Digikey Part #">3224W-1-201ECT-ND</field>
+        <field name="NOTE:">200 Ohm  ±100ppm/°C 12 turns</field>
+      </fields>
+      <libsource lib="device" part="POT_TRIM"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B11DA90</tstamp>
+    </comp>
+    <comp ref="RV1">
+      <value>POT_TRIM</value>
+      <footprint>Ben_Custom:Bourns_3313J_Trimpot-compact</footprint>
+      <datasheet>http://www.bourns.com/docs/Product-Datasheets/3313.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Bourns Inc.</field>
+        <field name="Manufacturer Part #">3313J-1-502E</field>
+        <field name="Digikey Part #">3313J-502ECT-ND</field>
+        <field name="NOTE:">5k Ohm</field>
+      </fields>
+      <libsource lib="device" part="POT_TRIM"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B121F44</tstamp>
+    </comp>
+    <comp ref="J6">
+      <value>Heat_Sink</value>
+      <footprint>Ben_Custom:40x40mm-heatsink_only-eighth-pad</footprint>
+      <datasheet>https://media.digikey.com/pdf/Data%20Sheets/Wakefield%20Thermal%20PDFs/910_Series_Pin.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Wakefield-Vette</field>
+        <field name="Manufacturer Part #">910-40-2-23-2-B-0</field>
+        <field name="Digikey Part #">345-1161-ND</field>
+        <field name="NOTE:">2.00°C/W @ 200 LFM</field>
+      </fields>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B125DF5</tstamp>
+    </comp>
+    <comp ref="J4">
+      <value>TEST_1P</value>
+      <footprint>Measurement_Points:Measurement_Point_Round-SMD-Pad_Small</footprint>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B126B39</tstamp>
+    </comp>
+    <comp ref="J2">
+      <value>TEST_1P</value>
+      <footprint>Measurement_Points:Measurement_Point_Round-SMD-Pad_Small</footprint>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B126DDE</tstamp>
+    </comp>
+    <comp ref="J3">
+      <value>TEST_1P</value>
+      <footprint>Measurement_Points:Measurement_Point_Round-SMD-Pad_Small</footprint>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B127230</tstamp>
+    </comp>
+    <comp ref="R9">
+      <value>5</value>
+      <footprint>TO_SOT_Packages_SMD:TO-263-2</footprint>
+      <datasheet>http://www.caddock.com/Online_catalog/Mrktg_Lit/MP725.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Caddock Electronics Inc.</field>
+        <field name="Manufacturer Part #">MP725-5.00-1%</field>
+        <field name="Digikey Part #">MP725-5.00-FCT-ND</field>
+        <field name="NOTE:">25W  -20/ +80ppm/°C</field>
+      </fields>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="R-current"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B12E302</tstamp>
+    </comp>
+    <comp ref="D4">
+      <value>D</value>
+      <footprint>Ben_Custom:Powerdi5060-8</footprint>
+      <datasheet>https://www.diodes.com/assets/Datasheets/SBRT20U50SLP.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Diodes Incorporated</field>
+        <field name="Manufacturer Part #">SBRT20U50SLP-13</field>
+        <field name="Digikey Part #">SBRT20U50SLP-13DICT-ND</field>
+        <field name="NOTE:">500mV at 20A - 50V reverse</field>
+      </fields>
+      <libsource lib="device" part="D"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B161720</tstamp>
+    </comp>
+    <comp ref="C17">
+      <value>2700 uF</value>
+      <footprint>Capacitors_THT:CP_Radial_D18.0mm_P7.50mm</footprint>
+      <datasheet>http://www.chemi-con.co.jp/cgi-bin/CAT_DB/SEARCH/cat_db_al.cgi?e=e&amp;j=p&amp;pdfname=ky</datasheet>
+      <fields>
+        <field name="Manufacturer">United Chemi-Con</field>
+        <field name="Manufacturer Part #">EKY-500ELL272MM40S</field>
+        <field name="Digikey Part #">565-1624-ND</field>
+        <field name="NOTE:">50V - 3.8A</field>
+      </fields>
+      <libsource lib="device" part="CP1"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B11E8F4</tstamp>
+    </comp>
+    <comp ref="C22">
+      <value>2700 uF</value>
+      <footprint>Capacitors_THT:CP_Radial_D18.0mm_P7.50mm</footprint>
+      <datasheet>http://www.chemi-con.co.jp/cgi-bin/CAT_DB/SEARCH/cat_db_al.cgi?e=e&amp;j=p&amp;pdfname=ky</datasheet>
+      <fields>
+        <field name="Manufacturer">United Chemi-Con</field>
+        <field name="Manufacturer Part #">EKY-500ELL272MM40S</field>
+        <field name="Digikey Part #">565-1624-ND</field>
+        <field name="NOTE:">50V - 3.8A</field>
+      </fields>
+      <libsource lib="device" part="CP1"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1716FF</tstamp>
+    </comp>
+    <comp ref="C21">
+      <value>2700 uF</value>
+      <footprint>Capacitors_THT:CP_Radial_D18.0mm_P7.50mm</footprint>
+      <datasheet>http://www.chemi-con.co.jp/cgi-bin/CAT_DB/SEARCH/cat_db_al.cgi?e=e&amp;j=p&amp;pdfname=ky</datasheet>
+      <fields>
+        <field name="Manufacturer">United Chemi-Con</field>
+        <field name="Manufacturer Part #">EKY-500ELL272MM40S</field>
+        <field name="Digikey Part #">565-1624-ND</field>
+        <field name="NOTE:">50V - 3.8A</field>
+      </fields>
+      <libsource lib="device" part="CP1"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B17197C</tstamp>
+    </comp>
+    <comp ref="C19">
+      <value>2700 uF</value>
+      <footprint>Capacitors_THT:CP_Radial_D18.0mm_P7.50mm</footprint>
+      <datasheet>http://www.chemi-con.co.jp/cgi-bin/CAT_DB/SEARCH/cat_db_al.cgi?e=e&amp;j=p&amp;pdfname=ky</datasheet>
+      <fields>
+        <field name="Manufacturer">United Chemi-Con</field>
+        <field name="Manufacturer Part #">EKY-500ELL272MM40S</field>
+        <field name="Digikey Part #">565-1624-ND</field>
+        <field name="NOTE:">50V - 3.8A</field>
+      </fields>
+      <libsource lib="device" part="CP1"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B171A10</tstamp>
+    </comp>
+    <comp ref="J8">
+      <value>TEST_1P</value>
+      <footprint>Wire_Pads:SolderWirePad_single_SMD_5x10mm</footprint>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1728BF</tstamp>
+    </comp>
+    <comp ref="J9">
+      <value>TEST_1P</value>
+      <footprint>Wire_Pads:SolderWirePad_single_SMD_5x10mm</footprint>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B172A71</tstamp>
+    </comp>
+    <comp ref="J10">
+      <value>TEST_1P</value>
+      <footprint>Wire_Pads:SolderWirePad_single_SMD_5x10mm</footprint>
+      <datasheet>https://media.digikey.com/pdf/Data%20Sheets/Phoenix%20Contact%20PDFs/0708250.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Phoenix Contact</field>
+        <field name="Manufacturer Part #">0708250</field>
+        <field name="Digikey Part #">277-5906-ND</field>
+        <field name="NOTE:">32A  12-24 AWG</field>
+      </fields>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1733F3</tstamp>
+    </comp>
+    <comp ref="J11">
+      <value>TEST_1P</value>
+      <footprint>Wire_Pads:SolderWirePad_single_SMD_5x10mm</footprint>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B173A33</tstamp>
+    </comp>
+    <comp ref="L4">
+      <value>Ferrite_Bead</value>
+      <footprint>Inductors_SMD:L_0603</footprint>
+      <datasheet>http://katalog.we-online.de/pbs/datasheet/742863147.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Wurth Electronics Inc.</field>
+        <field name="Manufacturer Part #">742863147</field>
+        <field name="Digikey Part #">732-2380-1-ND</field>
+        <field name="NOTE:">320 mOhm - 500mA max</field>
+      </fields>
+      <libsource lib="device" part="Ferrite_Bead"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1A2CE2</tstamp>
+    </comp>
+    <comp ref="C6">
+      <value>1 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>http://ds.yuden.co.jp/TYCOMPAS/ut/detail.do?productNo=HMK212BC7105KG-TE&amp;fileName=HMK212BC7105KG-TE_SS&amp;mode=specSheetDownload</datasheet>
+      <fields>
+        <field name="Manufacturer">Taiyo Yuden</field>
+        <field name="Manufacturer Part #">HMK212BC7105KG-TE</field>
+        <field name="Digikey Part #">587-5018-1-ND</field>
+        <field name="NOTE:">Low ESL (same as 0603)  - 100V to absorb inductor flyback</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1A9CA4</tstamp>
+    </comp>
+    <comp ref="L1">
+      <value>Ferrite_Bead</value>
+      <footprint>Inductors_SMD:L_0805</footprint>
+      <datasheet>http://katalog.we-online.de/pbs/datasheet/742792097.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Wurth Electronics Inc.</field>
+        <field name="Manufacturer Part #">742792097</field>
+        <field name="Digikey Part #">732-4649-1-ND</field>
+        <field name="NOTE:">300 mOhm - 1A max</field>
+      </fields>
+      <libsource lib="device" part="Ferrite_Bead"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1AA0AB</tstamp>
+    </comp>
+    <comp ref="L3">
+      <value>Ferrite_Bead</value>
+      <footprint>Inductors_SMD:L_0603</footprint>
+      <datasheet>http://katalog.we-online.de/pbs/datasheet/742863147.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Wurth Electronics Inc.</field>
+        <field name="Manufacturer Part #">742863147</field>
+        <field name="Digikey Part #">732-2380-1-ND</field>
+        <field name="NOTE:">320 mOhm - 500mA max</field>
+      </fields>
+      <libsource lib="device" part="Ferrite_Bead"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1AA297</tstamp>
+    </comp>
+    <comp ref="C8">
+      <value>4.7 pF</value>
+      <footprint>Capacitors_SMD:C_0603</footprint>
+      <datasheet>https://product.tdk.com/info/en/documents/chara_sheet/C1608NP01H4R7C080AA.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">TDK Corporation</field>
+        <field name="Manufacturer Part #">C1608NP01H4R7C080AA</field>
+        <field name="Digikey Part #">445-14084-1-ND</field>
+        <field name="NOTE:"> 0.3Ohm ESR - 80pH ESL</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B117A6D</tstamp>
+    </comp>
+    <comp ref="C7">
+      <value>4.7 pF</value>
+      <footprint>Capacitors_SMD:C_0603</footprint>
+      <datasheet>https://product.tdk.com/info/en/documents/chara_sheet/C1608NP01H4R7C080AA.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">TDK Corporation</field>
+        <field name="Manufacturer Part #">C1608NP01H4R7C080AA</field>
+        <field name="Digikey Part #">445-14084-1-ND</field>
+        <field name="NOTE:"> 0.3Ohm ESR - 80pH ESL</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B1AACBC</tstamp>
+    </comp>
+    <comp ref="J12">
+      <value>Heat_Sink</value>
+      <footprint>Ben_Custom:Heatsink-10x10mm-V2017B</footprint>
+      <datasheet>http://www.assmann-wsw.com/fileadmin/datasheets/ASS_0875_HS.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Assmann WSW Components</field>
+        <field name="Manufacturer Part #">V2017B</field>
+        <field name="Digikey Part #">AE10837-ND</field>
+        <field name="NOTE:">31.00°C/W @ Natural</field>
+      </fields>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B23A059</tstamp>
+    </comp>
+    <comp ref="J13">
+      <value>Heat_Sink</value>
+      <footprint>Ben_Custom:Heatsink-Wakefield_655-53AB_41x41mm</footprint>
+      <datasheet>http://www.wakefield-vette.com/Portals/0/resources/datasheets/655.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Wakefield-Vette</field>
+        <field name="Manufacturer Part #">655-53AB</field>
+        <field name="Digikey Part #">345-1093-ND</field>
+        <field name="NOTE:">2.00°C/W @ 400 LFM</field>
+      </fields>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B23862C</tstamp>
+    </comp>
+    <comp ref="Reg3">
+      <value>ADP7182AUJZ-Fixed</value>
+      <footprint>TO_SOT_Packages_SMD:TSOT-23-5</footprint>
+      <datasheet>http://www.analog.com/media/en/technical-documentation/data-sheets/ADP7182.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Analog Devices Inc.</field>
+        <field name="Manufacturer Part #">ADP7182AUJZ-1.8-R7</field>
+        <field name="Digikey Part #">ADP7182AUJZ-1.8-R7CT-ND</field>
+        <field name="NOTE:">Dropout max: 90mV at 50mA, 360mV at 200mA</field>
+      </fields>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="ADP7182AUJZ-Fixed"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2A6284</tstamp>
+    </comp>
+    <comp ref="R1">
+      <value>187k</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>http://www.susumu.co.jp/common/pdf/n_catalog_partition05_en.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Susumu</field>
+        <field name="Manufacturer Part #">RR1220P-1873-D-M</field>
+        <field name="Digikey Part #">RR12P187KDCT-ND</field>
+        <field name="NOTE:">25 ppm/oC ±0.5%</field>
+      </fields>
+      <libsource lib="device" part="R"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2A7A17</tstamp>
+    </comp>
+    <comp ref="D5">
+      <value>D_Schottky</value>
+      <footprint>Ben_Custom:DO-214AC</footprint>
+      <datasheet>http://www.comchiptech.com/cms/UserFiles/CDBA120SL-HF%20Thru295959.%20CDBA140SL-HF%20RevA.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Comchip Technology</field>
+        <field name="Manufacturer Part #">CDBA140SL-HF</field>
+        <field name="Digikey Part #">641-1762-1-ND</field>
+        <field name="NOTE:">330mV @ 1A</field>
+      </fields>
+      <libsource lib="device" part="D_Schottky"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2B6FB2</tstamp>
+    </comp>
+    <comp ref="D6">
+      <value>D_Schottky</value>
+      <footprint>Ben_Custom:DO-214AC</footprint>
+      <datasheet>http://www.comchiptech.com/cms/UserFiles/CDBA120SL-HF%20Thru295959.%20CDBA140SL-HF%20RevA.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Comchip Technology</field>
+        <field name="Manufacturer Part #">CDBA140SL-HF</field>
+        <field name="Digikey Part #">641-1762-1-ND</field>
+        <field name="NOTE:">330mV @ 1A</field>
+      </fields>
+      <libsource lib="device" part="D_Schottky"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2B960B</tstamp>
+    </comp>
+    <comp ref="L2">
+      <value>Ferrite_Bead</value>
+      <footprint>Inductors_SMD:L_0805</footprint>
+      <datasheet>http://katalog.we-online.de/pbs/datasheet/742792097.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Wurth Electronics Inc.</field>
+        <field name="Manufacturer Part #">742792097</field>
+        <field name="Digikey Part #">732-4649-1-ND</field>
+        <field name="NOTE:">300 mOhm - 1A max</field>
+      </fields>
+      <libsource lib="device" part="Ferrite_Bead"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2BAB76</tstamp>
+    </comp>
+    <comp ref="C28">
+      <value>10 nF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>http://www.samsungsem.com/kr/support/product-search/mlcc/__icsFiles/afieldfile/2016/09/21/Data%20sheet_CL21B103KDCNNNC.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Samsung Electro-Mechanics</field>
+        <field name="Manufacturer Part #">CL21B103KDCNNNC</field>
+        <field name="Digikey Part #">1276-1170-1-ND</field>
+        <field name="NOTE:">250V - 50MOhm resistance</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2AF2A3</tstamp>
+    </comp>
+    <comp ref="R2">
+      <value>4.7k</value>
+      <footprint>Resistors_SMD:R_0805</footprint>
+      <datasheet>http://www.rohm.com/web/global/datasheet/ESR01MZPF/esr-e</datasheet>
+      <fields>
+        <field name="Manufacturer">Rohm Semiconductor</field>
+        <field name="Manufacturer Part #">ESR10EZPJ472</field>
+        <field name="Digikey Part #">RHM4.7KKCT-ND</field>
+        <field name="NOTE:">0.4W - 200 ppm/oC - thick film</field>
+      </fields>
+      <libsource lib="device" part="R"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2E06F1</tstamp>
+    </comp>
+    <comp ref="C15">
+      <value>2.2 uF</value>
+      <footprint>Ben_Custom:0508_Capacitor</footprint>
+      <datasheet>http://ds.yuden.co.jp/TYCOMPAS/ut/detail.do?productNo=TWK212B7225MD-T&amp;fileName=TWK212B7225MD-T_SS&amp;mode=specSheetDownload</datasheet>
+      <fields>
+        <field name="Manufacturer">Taiyo Yuden</field>
+        <field name="Manufacturer Part #">TWK212B7225MD-T</field>
+        <field name="Digikey Part #">587-5165-1-ND</field>
+        <field name="NOTE:">Lower GHz impedance than pair of 0402 caps in SPICE</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2ED4BE</tstamp>
+    </comp>
+    <comp ref="D8">
+      <value>D_Schottky</value>
+      <footprint>Diodes_SMD:D_SOD-123F</footprint>
+      <datasheet>https://www.fairchildsemi.com/datasheets/SS/SS13FL.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">ON Semiconductor</field>
+        <field name="Manufacturer Part #">SS13FL</field>
+        <field name="Digikey Part #">SS13FLCT-ND</field>
+        <field name="NOTE:">6ns recovery for 100+ MHz filtering</field>
+      </fields>
+      <libsource lib="device" part="D_Schottky"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2F4378</tstamp>
+    </comp>
+    <comp ref="Reg4">
+      <value>LP2985-10.0</value>
+      <footprint>TO_SOT_Packages_SMD:SOT-23-5</footprint>
+      <datasheet>http://www.ti.com/lit/ds/symlink/lp2985.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Texas Instruments</field>
+        <field name="Manufacturer Part #">LP2985-10DBVR</field>
+        <field name="Digikey Part #">296-24263-1-ND</field>
+        <field name="NOTE:">10V fixed - 150mA max - PSRR 45dB (1kHz)</field>
+      </fields>
+      <libsource lib="regul" part="LP2985-10.0"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2ACBCF</tstamp>
+    </comp>
+    <comp ref="D9">
+      <value>D_Schottky</value>
+      <footprint>Diodes_SMD:D_SOD-123F</footprint>
+      <datasheet>https://www.fairchildsemi.com/datasheets/SS/SS13FL.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">ON Semiconductor</field>
+        <field name="Manufacturer Part #">SS13FL</field>
+        <field name="Digikey Part #">SS13FLCT-ND</field>
+        <field name="NOTE:">6ns recovery for 100+ MHz filtering</field>
+      </fields>
+      <libsource lib="device" part="D_Schottky"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2E270A</tstamp>
+    </comp>
+    <comp ref="D10">
+      <value>D_Schottky</value>
+      <footprint>Diodes_SMD:D_SOD-123F</footprint>
+      <datasheet>https://www.fairchildsemi.com/datasheets/SS/SS13FL.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">ON Semiconductor</field>
+        <field name="Manufacturer Part #">SS13FL</field>
+        <field name="Digikey Part #">SS13FLCT-ND</field>
+        <field name="NOTE:">6ns recovery for 100+ MHz filtering</field>
+      </fields>
+      <libsource lib="device" part="D_Schottky"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2E58E2</tstamp>
+    </comp>
+    <comp ref="D11">
+      <value>D</value>
+      <footprint>Diodes_SMD:D_SOD-323F</footprint>
+      <datasheet>https://assets.nexperia.com/documents/data-sheet/BAS16_SER.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Nexperia USA Inc.</field>
+        <field name="Manufacturer Part #">BAS16J,135</field>
+        <field name="Digikey Part #">1727-4797-1-ND</field>
+        <field name="NOTE:">1.25V max @ 150mA - 4ns recovery</field>
+      </fields>
+      <libsource lib="device" part="D"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2E6FF8</tstamp>
+    </comp>
+    <comp ref="D7">
+      <value>D</value>
+      <footprint>Diodes_SMD:D_SOD-323F</footprint>
+      <datasheet>https://assets.nexperia.com/documents/data-sheet/BAS16_SER.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Nexperia USA Inc.</field>
+        <field name="Manufacturer Part #">BAS16J,135</field>
+        <field name="Digikey Part #">1727-4797-1-ND</field>
+        <field name="NOTE:">1.25V max @ 150mA - 4ns recovery</field>
+      </fields>
+      <libsource lib="device" part="D"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B2E7740</tstamp>
+    </comp>
+    <comp ref="J14">
+      <value>Heat_Sink</value>
+      <footprint>Ben_Custom:Heatsink-10x10mm-V2017B</footprint>
+      <datasheet>http://www.assmann-wsw.com/fileadmin/datasheets/ASS_0875_HS.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Assmann WSW Components</field>
+        <field name="Manufacturer Part #">V2017B</field>
+        <field name="Digikey Part #">AE10837-ND</field>
+        <field name="NOTE:">31.00°C/W @ Natural</field>
+      </fields>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3347C2</tstamp>
+    </comp>
+    <comp ref="J15">
+      <value>Heat_Sink</value>
+      <footprint>Ben_Custom:Heatsink-10x10mm-V2017B</footprint>
+      <datasheet>http://www.assmann-wsw.com/fileadmin/datasheets/ASS_0875_HS.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Assmann WSW Components</field>
+        <field name="Manufacturer Part #">V2017B</field>
+        <field name="Digikey Part #">AE10837-ND</field>
+        <field name="NOTE:">31.00°C/W @ Natural</field>
+      </fields>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B335C88</tstamp>
+    </comp>
+    <comp ref="C23">
+      <value>10 nF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>http://www.samsungsem.com/kr/support/product-search/mlcc/__icsFiles/afieldfile/2016/09/21/Data%20sheet_CL21B103KDCNNNC.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Samsung Electro-Mechanics</field>
+        <field name="Manufacturer Part #">CL21B103KDCNNNC</field>
+        <field name="Digikey Part #">1276-1170-1-ND</field>
+        <field name="NOTE:">250V - 50MOhm resistance</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B353C2E</tstamp>
+    </comp>
+    <comp ref="C32">
+      <value>10 nF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>http://www.samsungsem.com/kr/support/product-search/mlcc/__icsFiles/afieldfile/2016/09/21/Data%20sheet_CL21B103KDCNNNC.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Samsung Electro-Mechanics</field>
+        <field name="Manufacturer Part #">CL21B103KDCNNNC</field>
+        <field name="Digikey Part #">1276-1170-1-ND</field>
+        <field name="NOTE:">250V - 50MOhm resistance</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B355F95</tstamp>
+    </comp>
+    <comp ref="R3">
+      <value>100</value>
+      <footprint>Resistors_SMD:R_0603</footprint>
+      <datasheet>http://www.yageo.com/documents/recent/PYu-RT_1-to-0.01_RoHS_L_9.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer"> Yageo</field>
+        <field name="Manufacturer Part #">RT0603FRE07100RL</field>
+        <field name="Digikey Part #">YAG2320CT-ND</field>
+        <field name="NOTE:"> ±50ppm/°C 0.1W ±1%</field>
+      </fields>
+      <libsource lib="device" part="R"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B35B1A1</tstamp>
+    </comp>
+    <comp ref="J5">
+      <value>Heat_Sink</value>
+      <footprint>Ben_Custom:Heatsink-10x10mm-V2017B</footprint>
+      <datasheet>http://www.assmann-wsw.com/fileadmin/datasheets/ASS_0875_HS.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Assmann WSW Components</field>
+        <field name="Manufacturer Part #">V2017B</field>
+        <field name="Digikey Part #">AE10837-ND</field>
+        <field name="NOTE:">31.00°C/W @ Natural</field>
+      </fields>
+      <libsource lib="conn" part="TEST_1P"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B363956</tstamp>
+    </comp>
+    <comp ref="L5">
+      <value>Ferrite_Bead</value>
+      <footprint>Inductors_SMD:L_0603</footprint>
+      <datasheet>http://katalog.we-online.de/pbs/datasheet/742863147.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Wurth Electronics Inc.</field>
+        <field name="Manufacturer Part #">742863147</field>
+        <field name="Digikey Part #">732-2380-1-ND</field>
+        <field name="NOTE:">320 mOhm - 500mA max</field>
+      </fields>
+      <libsource lib="device" part="Ferrite_Bead"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B37053C</tstamp>
+    </comp>
+    <comp ref="DP1">
+      <value>AD5162</value>
+      <footprint>Housings_SSOP:MSOP-10_3x3mm_Pitch0.5mm</footprint>
+      <datasheet>http://www.analog.com/media/en/technical-documentation/data-sheets/AD5162.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Analog Devices Inc.</field>
+        <field name="Manufacturer Part #">AD5162BRMZ2.5</field>
+        <field name="Digikey Part #">AD5162BRMZ2.5-ND</field>
+        <field name="NOTE:">35 ppm/°C - 35MHz SPI</field>
+      </fields>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="AD5162"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3B156D</tstamp>
+    </comp>
+    <comp ref="R8">
+      <value>1.8k</value>
+      <footprint>Resistors_SMD:R_0603</footprint>
+      <datasheet>http://www.yageo.com/documents/recent/PYu-RT_1-to-0.01_RoHS_L_9.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer"> Yageo</field>
+        <field name="Manufacturer Part #"> RT0603DRE071K8L</field>
+        <field name="Digikey Part #"> 311-2472-1-ND</field>
+        <field name="NOTE:"> ±50ppm/°C 0.1W ±0.5%</field>
+      </fields>
+      <libsource lib="device" part="R"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3B88BA</tstamp>
+    </comp>
+    <comp ref="R4">
+      <value>0</value>
+      <footprint>Resistors_SMD:R_1206</footprint>
+      <datasheet>https://www.seielect.com/Catalog/SEI-RMCF_RMCP.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Stackpole Electronics Inc.</field>
+        <field name="Manufacturer Part #">RMCF1206ZT0R00</field>
+        <field name="Digikey Part #">RMCF1206ZT0R00CT-ND</field>
+        <field name="NOTE:">Used as jumper - 0.25W</field>
+      </fields>
+      <libsource lib="device" part="R"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3C777E</tstamp>
+    </comp>
+    <comp ref="C29">
+      <value>2.2 uF</value>
+      <footprint>Ben_Custom:0508_Capacitor</footprint>
+      <datasheet>http://ds.yuden.co.jp/TYCOMPAS/ut/detail.do?productNo=TWK212B7225MD-T&amp;fileName=TWK212B7225MD-T_SS&amp;mode=specSheetDownload</datasheet>
+      <fields>
+        <field name="Manufacturer">Taiyo Yuden</field>
+        <field name="Manufacturer Part #">TWK212B7225MD-T</field>
+        <field name="Digikey Part #">587-5165-1-ND</field>
+        <field name="NOTE:">Lower GHz impedance than pair of 0402 caps in SPICE</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3CB864</tstamp>
+    </comp>
+    <comp ref="D12">
+      <value>D</value>
+      <footprint>Diodes_SMD:D_SOD-323F</footprint>
+      <datasheet>https://assets.nexperia.com/documents/data-sheet/BAS16_SER.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Nexperia USA Inc.</field>
+        <field name="Manufacturer Part #">BAS16J,135</field>
+        <field name="Digikey Part #">1727-4797-1-ND</field>
+        <field name="NOTE:">1.25V max @ 150mA - 4ns recovery</field>
+      </fields>
+      <libsource lib="device" part="D"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3CC7E7</tstamp>
+    </comp>
+    <comp ref="R10">
+      <value>10</value>
+      <footprint>Resistors_SMD:R_0603</footprint>
+      <datasheet>https://www.seielect.com/Catalog/SEI-rncp.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Stackpole Electronics Inc.</field>
+        <field name="Manufacturer Part #">RNCP0603FTD10R0</field>
+        <field name="Digikey Part #">RNCP0603FTD10R0CT-ND</field>
+        <field name="NOTE:">Prevent ground loop with second ground pin</field>
+      </fields>
+      <libsource lib="device" part="R"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3D608C</tstamp>
+    </comp>
+    <comp ref="C2">
+      <value>4.7 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C2012X5R1H475M125AB</datasheet>
+      <fields>
+        <field name="Manufacturer">TDK Corporation</field>
+        <field name="Manufacturer Part #">C2012X5R1H475M125AB</field>
+        <field name="Digikey Part #">445-5981-1-ND</field>
+        <field name="NOTE:"> 50V max - low ESL</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3F67EF</tstamp>
+    </comp>
+    <comp ref="C9">
+      <value>4.7 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C2012X5R1H475M125AB</datasheet>
+      <fields>
+        <field name="Manufacturer">TDK Corporation</field>
+        <field name="Manufacturer Part #">C2012X5R1H475M125AB</field>
+        <field name="Digikey Part #">445-5981-1-ND</field>
+        <field name="NOTE:"> 50V max - low ESL</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3FC7C8</tstamp>
+    </comp>
+    <comp ref="C11">
+      <value>4.7 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C2012X5R1H475M125AB</datasheet>
+      <fields>
+        <field name="Manufacturer">TDK Corporation</field>
+        <field name="Manufacturer Part #">C2012X5R1H475M125AB</field>
+        <field name="Digikey Part #">445-5981-1-ND</field>
+        <field name="NOTE:"> 50V max - low ESL</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3FC9A8</tstamp>
+    </comp>
+    <comp ref="C12">
+      <value>4.7 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C2012X5R1H475M125AB</datasheet>
+      <fields>
+        <field name="Manufacturer">TDK Corporation</field>
+        <field name="Manufacturer Part #">C2012X5R1H475M125AB</field>
+        <field name="Digikey Part #">445-5981-1-ND</field>
+        <field name="NOTE:"> 50V max - low ESL</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3FCA88</tstamp>
+    </comp>
+    <comp ref="C10">
+      <value>4.7 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C2012X5R1H475M125AB</datasheet>
+      <fields>
+        <field name="Manufacturer">TDK Corporation</field>
+        <field name="Manufacturer Part #">C2012X5R1H475M125AB</field>
+        <field name="Digikey Part #">445-5981-1-ND</field>
+        <field name="NOTE:"> 50V max - low ESL</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3FEBE0</tstamp>
+    </comp>
+    <comp ref="C24">
+      <value>4.7 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C2012X5R1H475M125AB</datasheet>
+      <fields>
+        <field name="Manufacturer">TDK Corporation</field>
+        <field name="Manufacturer Part #">C2012X5R1H475M125AB</field>
+        <field name="Digikey Part #">445-5981-1-ND</field>
+        <field name="NOTE:"> 50V max - low ESL</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3FED4A</tstamp>
+    </comp>
+    <comp ref="C27">
+      <value>4.7 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>https://product.tdk.com/en/search/capacitor/ceramic/mlcc/info?part_no=C2012X5R1H475M125AB</datasheet>
+      <fields>
+        <field name="Manufacturer">TDK Corporation</field>
+        <field name="Manufacturer Part #">C2012X5R1H475M125AB</field>
+        <field name="Digikey Part #">445-5981-1-ND</field>
+        <field name="NOTE:"> 50V max - low ESL</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B3FFB95</tstamp>
+    </comp>
+    <comp ref="C13">
+      <value>2.2 uF</value>
+      <footprint>Ben_Custom:0508_Capacitor</footprint>
+      <datasheet>http://ds.yuden.co.jp/TYCOMPAS/ut/detail.do?productNo=TWK212B7225MD-T&amp;fileName=TWK212B7225MD-T_SS&amp;mode=specSheetDownload</datasheet>
+      <fields>
+        <field name="Manufacturer">Taiyo Yuden</field>
+        <field name="Manufacturer Part #">TWK212B7225MD-T</field>
+        <field name="Digikey Part #">587-5165-1-ND</field>
+        <field name="NOTE:">Lower GHz impedance than pair of 0402 caps in SPICE</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B407E7B</tstamp>
+    </comp>
+    <comp ref="C26">
+      <value>2.2 uF</value>
+      <footprint>Ben_Custom:0508_Capacitor</footprint>
+      <datasheet>http://ds.yuden.co.jp/TYCOMPAS/ut/detail.do?productNo=TWK212B7225MD-T&amp;fileName=TWK212B7225MD-T_SS&amp;mode=specSheetDownload</datasheet>
+      <fields>
+        <field name="Manufacturer">Taiyo Yuden</field>
+        <field name="Manufacturer Part #">TWK212B7225MD-T</field>
+        <field name="Digikey Part #">587-5165-1-ND</field>
+        <field name="NOTE:">Lower GHz impedance than pair of 0402 caps in SPICE</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B409050</tstamp>
+    </comp>
+    <comp ref="D3">
+      <value>D_TVS</value>
+      <footprint>Ben_Custom:DO-214AC</footprint>
+      <datasheet>http://katalog.we-online.de/pbs/datasheet/824501241.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Wurth Electronics Inc.</field>
+        <field name="Manufacturer Part #">824501241</field>
+        <field name="Digikey Part #">732-9956-1-ND</field>
+        <field name="NOTE:">Standoff - 24V, Clamping - 38.9V - 10.3A max</field>
+      </fields>
+      <libsource lib="device" part="D_TVS"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B412FC4</tstamp>
+    </comp>
+    <comp ref="D13">
+      <value>D_Schottky</value>
+      <footprint>Diodes_SMD:D_SOD-323</footprint>
+      <datasheet>https://toshiba.semicon-storage.com/info/docget.jsp?did=14077&amp;prodName=CUS10S30</datasheet>
+      <fields>
+        <field name="Manufacturer">Toshiba Semiconductor and Storage</field>
+        <field name="Manufacturer Part #">CUS10S30,H3F</field>
+        <field name="Digikey Part #">CUS10S30H3FCT-ND</field>
+        <field name="NOTE:">230mV @ 100mA max</field>
+      </fields>
+      <libsource lib="device" part="D_Schottky"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B41A41B</tstamp>
+    </comp>
+    <comp ref="SW1">
+      <value>TS5A3357DCUR</value>
+      <footprint>Ben_Custom:8-VFSOP</footprint>
+      <datasheet>http://www.ti.com/lit/ds/symlink/ts5a3357.pdf</datasheet>
+      <fields>
+        <field name="Digikey Part #">296-17404-1-ND</field>
+        <field name="Manufacturer">Texas Instruments</field>
+        <field name="Manufacturer Part #">TS5A3357DCUR</field>
+        <field name="NOTE:">15 Ohm - 6.5ns switch time</field>
+      </fields>
+      <libsource lib="MHz_LED_Modulator_v2-cache" part="TS5A3357DCUR"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B349A05</tstamp>
+    </comp>
+    <comp ref="J1">
+      <value>Conn_Coaxial</value>
+      <footprint>Socket_Strips:Socket_Strip_Straight_1x02_Pitch2.54mm</footprint>
+      <datasheet>http://www.sullinscorp.com/drawings/78_P(N)PxCxxxLFBN-RC,_10492-H.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Sullins Connector Solutions</field>
+        <field name="Manufacturer Part #">PPPC021LFBN-RC</field>
+        <field name="Digikey Part #">S7035-ND</field>
+        <field name="NOTE:"> </field>
+      </fields>
+      <libsource lib="conn" part="Conn_Coaxial"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B444F1E</tstamp>
+    </comp>
+    <comp ref="RN1">
+      <value>4.7k</value>
+      <footprint>Ben_Custom:Resistor_Array_x4_1206</footprint>
+      <datasheet>https://industrial.panasonic.com/cdbs/www-data/pdf/AOC0000/AOC0000C14.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Panasonic Electronic Components</field>
+        <field name="Manufacturer Part #">EXB-38V472JV</field>
+        <field name="Digikey Part #">Y9472CT-ND</field>
+        <field name="NOTE:">±5% ±200ppm/°C 62.5mW</field>
+      </fields>
+      <libsource lib="device" part="R_Pack04"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B45DFCE</tstamp>
+    </comp>
+    <comp ref="TH1">
+      <value>10k</value>
+      <footprint>Ben_Custom:CC_silkscreen</footprint>
+      <datasheet>http://www.cantherm.com/wp-content/uploads/2017/05/cantherm_mf52_1.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Cantherm</field>
+        <field name="Manufacturer Part #">MF52A2103J3470</field>
+        <field name="Digikey Part #">317-1258-ND</field>
+        <field name="NOTE:">B25/50 3470K</field>
+      </fields>
+      <libsource lib="device" part="Thermistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B470D28</tstamp>
+    </comp>
+    <comp ref="J17">
+      <value>Conn_01x05_Female</value>
+      <footprint>Socket_Strips:Socket_Strip_Straight_1x05_Pitch2.54mm</footprint>
+      <datasheet>http://www.sullinscorp.com/drawings/78_P(N)PxCxxxLFBN-RC,_10492-H.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Sullins Connector Solutions</field>
+        <field name="Manufacturer Part #">PPTC051LFBN-RC</field>
+        <field name="Digikey Part #">S6103-ND</field>
+        <field name="NOTE:"> </field>
+      </fields>
+      <libsource lib="conn" part="Conn_01x05_Female"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B472F85</tstamp>
+    </comp>
+    <comp ref="C25">
+      <value>2.2 uF</value>
+      <footprint>Ben_Custom:0508_Capacitor</footprint>
+      <datasheet>http://ds.yuden.co.jp/TYCOMPAS/ut/detail.do?productNo=TWK212B7225MD-T&amp;fileName=TWK212B7225MD-T_SS&amp;mode=specSheetDownload</datasheet>
+      <fields>
+        <field name="Manufacturer">Taiyo Yuden</field>
+        <field name="Manufacturer Part #">TWK212B7225MD-T</field>
+        <field name="Digikey Part #">587-5165-1-ND</field>
+        <field name="NOTE:">Lower GHz impedance than pair of 0402 caps in SPICE</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B4764E9</tstamp>
+    </comp>
+    <comp ref="TH2">
+      <value>10k</value>
+      <footprint>Ben_Custom:CC_Attribution</footprint>
+      <datasheet>http://www.cantherm.com/wp-content/uploads/2017/05/cantherm_mf52_1.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Cantherm</field>
+        <field name="Manufacturer Part #">MF52A2103J3470</field>
+        <field name="Digikey Part #">317-1258-ND</field>
+        <field name="NOTE:">B25/50 3470K</field>
+      </fields>
+      <libsource lib="device" part="Thermistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B4784AA</tstamp>
+    </comp>
+    <comp ref="TH3">
+      <value>10k</value>
+      <footprint>Ben_Custom:CC_Share_alike</footprint>
+      <datasheet>http://www.cantherm.com/wp-content/uploads/2017/05/cantherm_mf52_1.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Cantherm</field>
+        <field name="Manufacturer Part #">MF52A2103J3470</field>
+        <field name="Digikey Part #">317-1258-ND</field>
+        <field name="NOTE:">B25/50 3470K</field>
+      </fields>
+      <libsource lib="device" part="Thermistor"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B47858A</tstamp>
+    </comp>
+    <comp ref="J16">
+      <value>Conn_Coaxial</value>
+      <footprint>Socket_Strips:Socket_Strip_Straight_1x02_Pitch2.54mm</footprint>
+      <datasheet>http://www.sullinscorp.com/drawings/78_P(N)PxCxxxLFBN-RC,_10492-H.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">Sullins Connector Solutions</field>
+        <field name="Manufacturer Part #">PPPC021LFBN-RC</field>
+        <field name="Digikey Part #">S7035-ND</field>
+        <field name="NOTE:"> </field>
+      </fields>
+      <libsource lib="conn" part="Conn_Coaxial"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B4803F2</tstamp>
+    </comp>
+    <comp ref="RV4">
+      <value>10k</value>
+      <footprint>Symbols:OSHW-Symbol_6.7x6mm_SilkScreen</footprint>
+      <datasheet>http://www.ttelectronics.com/sites/default/files/download-files/Datasheet_RotaryPanelPot_P170series.pdf</datasheet>
+      <fields>
+        <field name="Manufacturer">TT Electronics/BI</field>
+        <field name="Manufacturer Part #">P170S-FC20BR10K</field>
+        <field name="Digikey Part #">987-1318-ND</field>
+        <field name="NOTE:">Rotary, SPST</field>
+      </fields>
+      <libsource lib="device" part="POT"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B479FE9</tstamp>
+    </comp>
+    <comp ref="C3">
+      <value>1 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>http://ds.yuden.co.jp/TYCOMPAS/ut/detail.do?productNo=HMK212BC7105KG-TE&amp;fileName=HMK212BC7105KG-TE_SS&amp;mode=specSheetDownload</datasheet>
+      <fields>
+        <field name="Manufacturer">Taiyo Yuden</field>
+        <field name="Manufacturer Part #">HMK212BC7105KG-TE</field>
+        <field name="Digikey Part #">587-5018-1-ND</field>
+        <field name="NOTE:">Low ESL (same as 0603) - 100V</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B481002</tstamp>
+    </comp>
+    <comp ref="C4">
+      <value>1 uF</value>
+      <footprint>Capacitors_SMD:C_0805</footprint>
+      <datasheet>http://ds.yuden.co.jp/TYCOMPAS/ut/detail.do?productNo=HMK212BC7105KG-TE&amp;fileName=HMK212BC7105KG-TE_SS&amp;mode=specSheetDownload</datasheet>
+      <fields>
+        <field name="Manufacturer">Taiyo Yuden</field>
+        <field name="Manufacturer Part #">HMK212BC7105KG-TE</field>
+        <field name="Digikey Part #">587-5018-1-ND</field>
+        <field name="NOTE:">Low ESL (same as 0603) - 100V</field>
+      </fields>
+      <libsource lib="device" part="C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamp>5B4812B2</tstamp>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="MHz_LED_Modulator_v2-cache" part="AD5162">
+      <fields>
+        <field name="Reference">DP</field>
+        <field name="Value">AD5162</field>
+      </fields>
+      <pins>
+        <pin num="1" name="B1" type="BiDi"/>
+        <pin num="2" name="A1" type="BiDi"/>
+        <pin num="3" name="W2" type="BiDi"/>
+        <pin num="4" name="GND" type="power_in"/>
+        <pin num="5" name="Vdd" type="power_in"/>
+        <pin num="6" name="CLK" type="input"/>
+        <pin num="7" name="SDI" type="input"/>
+        <pin num="8" name="~CS" type="BiDi"/>
+        <pin num="9" name="B2" type="BiDi"/>
+        <pin num="10" name="W1" type="BiDi"/>
+      </pins>
+    </libpart>
+    <libpart lib="MHz_LED_Modulator_v2-cache" part="ADP7182AUJZ-Fixed">
+      <description>-28 V, -200 mA, Low Noise, Linear Regulator, TSOT-23-5</description>
+      <docs>http://www.analog.com/media/en/technical-documentation/data-sheets/ADP7182.pdf</docs>
+      <footprints>
+        <fp>TSOT?23*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">ADP7182AUJZ-Fixed</field>
+        <field name="Footprint">TO_SOT_Packages_SMD:TSOT-23-5</field>
+      </fields>
+      <pins>
+        <pin num="1" name="GND" type="power_in"/>
+        <pin num="2" name="VIN" type="power_in"/>
+        <pin num="3" name="EN" type="input"/>
+        <pin num="4" name="FB" type="NotConnected"/>
+        <pin num="5" name="VOUT" type="power_out"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="C">
+      <description>Unpolarized capacitor</description>
+      <footprints>
+        <fp>C_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">C</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="MHz_LED_Modulator_v2-cache" part="CONN_01X06">
+      <footprints>
+        <fp>Pin_Header_Straight_1X06</fp>
+        <fp>Pin_Header_Angled_1X06</fp>
+        <fp>Socket_Strip_Straight_1X06</fp>
+        <fp>Socket_Strip_Angled_1X06</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">P</field>
+        <field name="Value">CONN_01X06</field>
+      </fields>
+      <pins>
+        <pin num="1" name="P1" type="passive"/>
+        <pin num="2" name="P2" type="passive"/>
+        <pin num="3" name="P3" type="passive"/>
+        <pin num="4" name="P4" type="passive"/>
+        <pin num="5" name="P5" type="passive"/>
+        <pin num="6" name="P6" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="MHz_LED_Modulator_v2-cache" part="CONN_01X08">
+      <footprints>
+        <fp>Pin_Header_Straight_1X08</fp>
+        <fp>Pin_Header_Angled_1X08</fp>
+        <fp>Socket_Strip_Straight_1X08</fp>
+        <fp>Socket_Strip_Angled_1X08</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">P</field>
+        <field name="Value">CONN_01X08</field>
+      </fields>
+      <pins>
+        <pin num="1" name="P1" type="passive"/>
+        <pin num="2" name="P2" type="passive"/>
+        <pin num="3" name="P3" type="passive"/>
+        <pin num="4" name="P4" type="passive"/>
+        <pin num="5" name="P5" type="passive"/>
+        <pin num="6" name="P6" type="passive"/>
+        <pin num="7" name="P7" type="passive"/>
+        <pin num="8" name="P8" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="MHz_LED_Modulator_v2-cache" part="CONN_01X10">
+      <footprints>
+        <fp>Pin_Header_Straight_1X10</fp>
+        <fp>Pin_Header_Angled_1X10</fp>
+        <fp>Socket_Strip_Straight_1X10</fp>
+        <fp>Socket_Strip_Angled_1X10</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">P</field>
+        <field name="Value">CONN_01X10</field>
+      </fields>
+      <pins>
+        <pin num="1" name="P1" type="passive"/>
+        <pin num="2" name="P2" type="passive"/>
+        <pin num="3" name="P3" type="passive"/>
+        <pin num="4" name="P4" type="passive"/>
+        <pin num="5" name="P5" type="passive"/>
+        <pin num="6" name="P6" type="passive"/>
+        <pin num="7" name="P7" type="passive"/>
+        <pin num="8" name="P8" type="passive"/>
+        <pin num="9" name="P9" type="passive"/>
+        <pin num="10" name="P10" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="CP1">
+      <description>Polarised capacitor</description>
+      <footprints>
+        <fp>CP_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">C</field>
+        <field name="Value">CP1</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="conn" part="Conn_01x05_Female">
+      <description>Generic connector, single row, 01x05</description>
+      <docs>~</docs>
+      <footprints>
+        <fp>Connector*:*_??x*mm*</fp>
+        <fp>Connector*:*1x??x*mm*</fp>
+        <fp>Socket?Strip?Straight?1X*</fp>
+        <fp>Socket?Strip?Angled?1X*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_01x05_Female</field>
+      </fields>
+      <pins>
+        <pin num="1" name="Pin_1" type="passive"/>
+        <pin num="2" name="Pin_2" type="passive"/>
+        <pin num="3" name="Pin_3" type="passive"/>
+        <pin num="4" name="Pin_4" type="passive"/>
+        <pin num="5" name="Pin_5" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="conn" part="Conn_Coaxial">
+      <description>coaxial connector (BNC, SMA, SMB, SMC, Cinch/RCA, ...)</description>
+      <footprints>
+        <fp>*BNC*</fp>
+        <fp>*SMA*</fp>
+        <fp>*SMB*</fp>
+        <fp>*SMC*</fp>
+        <fp>*Cinch*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">Conn_Coaxial</field>
+      </fields>
+      <pins>
+        <pin num="1" name="In" type="passive"/>
+        <pin num="2" name="Ext" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="MHz_LED_Modulator_v2-cache" part="Coupled_Inductor">
+      <description>EMI 2-inductor-filter</description>
+      <docs>http://www.murata.com/~/media/webrenewal/support/library/catalog/products/emc/emifil/c30e.ashx?la=en-gb</docs>
+      <footprints>
+        <fp>L_*</fp>
+        <fp>L_CommonMode*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">FL</field>
+        <field name="Value">Coupled_Inductor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+        <pin num="3" name="3" type="passive"/>
+        <pin num="4" name="4" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="D">
+      <description>Diode</description>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*SingleDiode</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="D_Schottky">
+      <description>Schottky diode</description>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*SingleDiode</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_Schottky</field>
+      </fields>
+      <pins>
+        <pin num="1" name="K" type="passive"/>
+        <pin num="2" name="A" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="D_TVS">
+      <description>Bidirectional transient-voltage-suppression (TVS) diode</description>
+      <docs>https://en.wikipedia.org/wiki/Transient-voltage-suppression_diode</docs>
+      <footprints>
+        <fp>TO-???*</fp>
+        <fp>*SingleDiode</fp>
+        <fp>*_Diode_*</fp>
+        <fp>*SingleDiode*</fp>
+        <fp>D_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">D</field>
+        <field name="Value">D_TVS</field>
+      </fields>
+      <pins>
+        <pin num="1" name="A1" type="passive"/>
+        <pin num="2" name="A2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="Ferrite_Bead">
+      <description>Ferrite bead</description>
+      <footprints>
+        <fp>Inductor_*</fp>
+        <fp>L_*</fp>
+        <fp>*Ferrite*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">L</field>
+        <field name="Value">Ferrite_Bead</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="regul" part="LP2985-1.8">
+      <aliases>
+        <alias>LP2985-2.5</alias>
+        <alias>LP2985-2.8</alias>
+        <alias>LP2985-2.9</alias>
+        <alias>LP2985-3.0</alias>
+        <alias>LP2985-3.1</alias>
+        <alias>LP2985-3.3</alias>
+        <alias>LP2985-5.0</alias>
+        <alias>LP2985-10.0</alias>
+      </aliases>
+      <description>150mA 16V Low-noise Low-dropout Regulator With Shutdown, 1.8V output voltage, SOT-23-5</description>
+      <docs>http://www.ti.com/lit/ds/symlink/lp2985.pdf</docs>
+      <footprints>
+        <fp>SOT?23*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">LP2985-1.8</field>
+        <field name="Footprint">TO_SOT_Packages_SMD:SOT-23-5</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VIN" type="power_in"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="ON/~OFF~" type="input"/>
+        <pin num="4" name="BP" type="input"/>
+        <pin num="5" name="VOUT" type="power_out"/>
+      </pins>
+    </libpart>
+    <libpart lib="MHz_LED_Modulator_v2-cache" part="LT8330">
+      <fields>
+        <field name="Reference">Reg</field>
+        <field name="Value">LT8330</field>
+      </fields>
+      <pins>
+        <pin num="1" name="SW" type="power_out"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="FBX" type="input"/>
+        <pin num="4" name="EN/UV" type="input"/>
+        <pin num="5" name="INTV" type="input"/>
+        <pin num="6" name="Vin" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="linear" part="MAX4238AUT">
+      <aliases>
+        <alias>MAX4239AUT</alias>
+      </aliases>
+      <description>Ultra-Low Offset/Drift, Low-Noise, Precision Amplifiers, SOT-23-6</description>
+      <docs>http://datasheets.maximintegrated.com/en/ds/MAX4238-MAX4239.pdf</docs>
+      <footprints>
+        <fp>SOT*23*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">MAX4238AUT</field>
+        <field name="Footprint">TO_SOT_Packages_SMD:SOT-23-6</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="output"/>
+        <pin num="2" name="V-" type="power_in"/>
+        <pin num="3" name="+" type="input"/>
+        <pin num="4" name="-" type="input"/>
+        <pin num="5" name="~SHDN" type="input"/>
+        <pin num="6" name="V+" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="POT">
+      <description>Potentiometer</description>
+      <footprints>
+        <fp>Potentiometer*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">RV</field>
+        <field name="Value">POT</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+        <pin num="3" name="3" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="POT_TRIM">
+      <description>Trim-Potentiometer</description>
+      <footprints>
+        <fp>Potentiometer*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">RV</field>
+        <field name="Value">POT_TRIM</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="passive"/>
+        <pin num="3" name="3" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="Q_NMOS_GDS">
+      <description>Transistor N-MOSFET with substrate diode (general)</description>
+      <fields>
+        <field name="Reference">Q</field>
+        <field name="Value">Q_NMOS_GDS</field>
+      </fields>
+      <pins>
+        <pin num="1" name="G" type="input"/>
+        <pin num="2" name="D" type="passive"/>
+        <pin num="3" name="S" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="R">
+      <description>Resistor</description>
+      <footprints>
+        <fp>R_*</fp>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="MHz_LED_Modulator_v2-cache" part="R-current">
+      <description>Resistor</description>
+      <footprints>
+        <fp>R_*</fp>
+        <fp>R_*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">R</field>
+        <field name="Value">R-current</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+        <pin num="2" name="2" type="unspc"/>
+        <pin num="3" name="3" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="R_Pack04">
+      <description>4 Resistor network, parallel topology, DIP package</description>
+      <footprints>
+        <fp>DIP*</fp>
+        <fp>SOIC*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">RN</field>
+        <field name="Value">R_Pack04</field>
+      </fields>
+      <pins>
+        <pin num="1" name="R1.1" type="passive"/>
+        <pin num="2" name="R2.1" type="passive"/>
+        <pin num="3" name="R3.1" type="passive"/>
+        <pin num="4" name="R4.1" type="passive"/>
+        <pin num="5" name="R4.2" type="passive"/>
+        <pin num="6" name="R3.2" type="passive"/>
+        <pin num="7" name="R2.2" type="passive"/>
+        <pin num="8" name="R1.2" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="conn" part="TEST_1P">
+      <description>point</description>
+      <fields>
+        <field name="Reference">J</field>
+        <field name="Value">TEST_1P</field>
+      </fields>
+      <pins>
+        <pin num="1" name="1" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="MHz_LED_Modulator_v2-cache" part="TS5A3357DCUR">
+      <aliases>
+        <alias>FSA3157P6X</alias>
+        <alias>TS5A3159DCK</alias>
+        <alias>TS5A3160DCK</alias>
+        <alias>TS5A3159ADCKR</alias>
+      </aliases>
+      <description>Single SPDT Low-Voltage Analog Switch or 2:1 Multiplexer/De-Multiplexer Bus Switch, 10Ohm Ron, SC-70-6</description>
+      <docs>https://www.fairchildsemi.com/datasheets/NC/NC7SB3157.pdf</docs>
+      <footprints>
+        <fp>*SC?70*</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">TS5A3357DCUR</field>
+        <field name="Footprint">TO_SOT_Packages_SMD:SOT-363_SC-70-6</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="~" type="passive"/>
+        <pin num="4" name="GND" type="power_in"/>
+        <pin num="5" name="V+" type="power_in"/>
+        <pin num="6" name="IN1" type="input"/>
+        <pin num="7" name="~" type="passive"/>
+        <pin num="8" name="V+" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="device" part="Thermistor">
+      <description>Thermistor, temperature-dependent resistor</description>
+      <footprints>
+        <fp>R_*</fp>
+        <fp>SM0603</fp>
+        <fp>SM0805</fp>
+      </footprints>
+      <fields>
+        <field name="Reference">TH</field>
+        <field name="Value">Thermistor</field>
+      </fields>
+      <pins>
+        <pin num="1" name="~" type="passive"/>
+        <pin num="2" name="~" type="passive"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="device">
+      <uri>C:\Program Files\KiCad\share\kicad\library\device.lib</uri>
+    </library>
+    <library logical="conn">
+      <uri>C:\Program Files\KiCad\share\kicad\library\conn.lib</uri>
+    </library>
+    <library logical="linear">
+      <uri>C:\Program Files\KiCad\share\kicad\library\linear.lib</uri>
+    </library>
+    <library logical="regul">
+      <uri>C:\Program Files\KiCad\share\kicad\library\regul.lib</uri>
+    </library>
+    <library logical="MHz_LED_Modulator_v2-cache">
+      <uri>D:\CAD designs\Feller Lab\MHz_LED_Modulator-v2\MHz_LED_Modulator_v2\MHz_LED_Modulator_v2-cache.lib</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="GND">
+      <node ref="C1" pin="2"/>
+      <node ref="C20" pin="1"/>
+      <node ref="Reg1" pin="2"/>
+      <node ref="C18" pin="2"/>
+      <node ref="C14" pin="1"/>
+      <node ref="P1" pin="7"/>
+      <node ref="P1" pin="6"/>
+      <node ref="R6" pin="2"/>
+      <node ref="Reg2" pin="2"/>
+      <node ref="TH3" pin="2"/>
+      <node ref="J17" pin="3"/>
+      <node ref="J17" pin="1"/>
+      <node ref="C4" pin="1"/>
+      <node ref="C3" pin="1"/>
+      <node ref="J16" pin="2"/>
+      <node ref="J17" pin="4"/>
+      <node ref="TH2" pin="2"/>
+      <node ref="RV4" pin="3"/>
+      <node ref="C12" pin="1"/>
+      <node ref="C11" pin="1"/>
+      <node ref="C9" pin="1"/>
+      <node ref="FL1" pin="3"/>
+      <node ref="C25" pin="2"/>
+      <node ref="J17" pin="5"/>
+      <node ref="R9" pin="1"/>
+      <node ref="D2" pin="1"/>
+      <node ref="R9" pin="2"/>
+      <node ref="J6" pin="1"/>
+      <node ref="RV1" pin="1"/>
+      <node ref="C19" pin="2"/>
+      <node ref="C21" pin="2"/>
+      <node ref="C17" pin="2"/>
+      <node ref="Reg4" pin="2"/>
+      <node ref="C22" pin="2"/>
+      <node ref="J8" pin="1"/>
+      <node ref="Reg3" pin="1"/>
+      <node ref="J13" pin="1"/>
+      <node ref="C15" pin="1"/>
+      <node ref="R2" pin="1"/>
+      <node ref="C28" pin="2"/>
+      <node ref="C23" pin="2"/>
+      <node ref="R1" pin="2"/>
+      <node ref="R10" pin="1"/>
+      <node ref="C26" pin="2"/>
+      <node ref="C13" pin="2"/>
+      <node ref="C27" pin="1"/>
+      <node ref="C24" pin="1"/>
+      <node ref="J1" pin="2"/>
+      <node ref="RN1" pin="4"/>
+      <node ref="RN1" pin="5"/>
+      <node ref="C2" pin="2"/>
+      <node ref="C10" pin="1"/>
+      <node ref="DP1" pin="4"/>
+      <node ref="DP1" pin="1"/>
+      <node ref="J5" pin="1"/>
+      <node ref="SW1" pin="4"/>
+      <node ref="R3" pin="1"/>
+      <node ref="C32" pin="2"/>
+      <node ref="C29" pin="1"/>
+      <node ref="TH1" pin="2"/>
+    </net>
+    <net code="2" name="/7">
+      <node ref="DP1" pin="5"/>
+      <node ref="R4" pin="1"/>
+      <node ref="C23" pin="1"/>
+      <node ref="C27" pin="2"/>
+      <node ref="P4" pin="1"/>
+    </net>
+    <net code="3" name="-2V">
+      <node ref="Reg3" pin="5"/>
+      <node ref="C15" pin="2"/>
+      <node ref="OA1" pin="2"/>
+    </net>
+    <net code="4" name="Net-(C16-Pad1)">
+      <node ref="J3" pin="1"/>
+      <node ref="C16" pin="1"/>
+      <node ref="OA1" pin="4"/>
+      <node ref="RV3" pin="1"/>
+    </net>
+    <net code="5" name="/4">
+      <node ref="SW1" pin="5"/>
+      <node ref="P4" pin="4"/>
+    </net>
+    <net code="6" name="/3(**)">
+      <node ref="SW1" pin="6"/>
+      <node ref="P4" pin="5"/>
+    </net>
+    <net code="7" name="Net-(C32-Pad1)">
+      <node ref="R4" pin="2"/>
+      <node ref="C32" pin="1"/>
+      <node ref="SW1" pin="8"/>
+    </net>
+    <net code="8" name="Net-(J1-Pad1)">
+      <node ref="J1" pin="1"/>
+      <node ref="SW1" pin="1"/>
+    </net>
+    <net code="9" name="Net-(D6-Pad2)">
+      <node ref="D6" pin="2"/>
+      <node ref="L2" pin="1"/>
+    </net>
+    <net code="10" name="Net-(D3-Pad1)">
+      <node ref="J11" pin="1"/>
+      <node ref="Q1" pin="2"/>
+      <node ref="D3" pin="1"/>
+    </net>
+    <net code="11" name="Net-(J4-Pad1)">
+      <node ref="RV2" pin="2"/>
+      <node ref="Q1" pin="1"/>
+      <node ref="J4" pin="1"/>
+    </net>
+    <net code="12" name="/Input">
+      <node ref="RV1" pin="3"/>
+      <node ref="SW1" pin="7"/>
+    </net>
+    <net code="13" name="Net-(D5-Pad2)">
+      <node ref="D5" pin="2"/>
+      <node ref="L1" pin="1"/>
+    </net>
+    <net code="14" name="/13(SCK)">
+      <node ref="DP1" pin="6"/>
+      <node ref="P3" pin="5"/>
+    </net>
+    <net code="15" name="/11(**/MOSI)">
+      <node ref="P3" pin="7"/>
+      <node ref="DP1" pin="7"/>
+    </net>
+    <net code="16" name="/8">
+      <node ref="P3" pin="10"/>
+      <node ref="DP1" pin="8"/>
+    </net>
+    <net code="17" name="Net-(C29-Pad2)">
+      <node ref="R8" pin="1"/>
+      <node ref="D12" pin="2"/>
+      <node ref="C29" pin="2"/>
+    </net>
+    <net code="18" name="Net-(D12-Pad1)">
+      <node ref="L5" pin="2"/>
+      <node ref="D12" pin="1"/>
+    </net>
+    <net code="19" name="Net-(DP1-Pad10)">
+      <node ref="DP1" pin="9"/>
+      <node ref="DP1" pin="10"/>
+    </net>
+    <net code="20" name="/9(**)">
+      <node ref="DP1" pin="2"/>
+      <node ref="P3" pin="9"/>
+    </net>
+    <net code="21" name="Net-(DP1-Pad3)">
+      <node ref="DP1" pin="3"/>
+      <node ref="SW1" pin="2"/>
+    </net>
+    <net code="22" name="Net-(C26-Pad1)">
+      <node ref="Reg3" pin="2"/>
+      <node ref="C26" pin="1"/>
+      <node ref="D11" pin="2"/>
+      <node ref="Reg3" pin="3"/>
+    </net>
+    <net code="23" name="/-4V">
+      <node ref="D11" pin="1"/>
+      <node ref="L3" pin="1"/>
+      <node ref="C24" pin="2"/>
+      <node ref="L5" pin="1"/>
+    </net>
+    <net code="24" name="Net-(C13-Pad1)">
+      <node ref="Reg4" pin="3"/>
+      <node ref="Reg4" pin="1"/>
+      <node ref="D8" pin="1"/>
+      <node ref="C13" pin="1"/>
+    </net>
+    <net code="25" name="/A3">
+      <node ref="D13" pin="1"/>
+      <node ref="P2" pin="4"/>
+    </net>
+    <net code="26" name="Net-(R3-Pad2)">
+      <node ref="R8" pin="2"/>
+      <node ref="R3" pin="2"/>
+      <node ref="SW1" pin="3"/>
+    </net>
+    <net code="27" name="GND(NC)">
+      <node ref="P3" pin="4"/>
+      <node ref="R10" pin="2"/>
+    </net>
+    <net code="28" name="/Vin(Arduino)">
+      <node ref="P1" pin="8"/>
+      <node ref="C25" pin="1"/>
+      <node ref="D9" pin="1"/>
+    </net>
+    <net code="29" name="Net-(C12-Pad2)">
+      <node ref="C12" pin="2"/>
+      <node ref="D8" pin="2"/>
+      <node ref="D9" pin="2"/>
+      <node ref="L4" pin="1"/>
+    </net>
+    <net code="30" name="+5V">
+      <node ref="P1" pin="5"/>
+      <node ref="RN1" pin="8"/>
+      <node ref="RN1" pin="7"/>
+      <node ref="RN1" pin="6"/>
+      <node ref="RV4" pin="1"/>
+    </net>
+    <net code="31" name="/A5(SCL)">
+      <node ref="P2" pin="6"/>
+      <node ref="RV4" pin="2"/>
+    </net>
+    <net code="32" name="Net-(C3-Pad2)">
+      <node ref="Reg1" pin="5"/>
+      <node ref="C3" pin="2"/>
+    </net>
+    <net code="33" name="Net-(C4-Pad2)">
+      <node ref="Reg2" pin="5"/>
+      <node ref="C4" pin="2"/>
+    </net>
+    <net code="34" name="Net-(D13-Pad2)">
+      <node ref="J17" pin="2"/>
+      <node ref="D13" pin="2"/>
+    </net>
+    <net code="35" name="Net-(C5-Pad2)">
+      <node ref="C5" pin="2"/>
+      <node ref="D1" pin="2"/>
+      <node ref="FL1" pin="2"/>
+    </net>
+    <net code="36" name="Net-(C6-Pad1)">
+      <node ref="FL2" pin="4"/>
+      <node ref="Reg2" pin="1"/>
+      <node ref="C6" pin="1"/>
+    </net>
+    <net code="37" name="Net-(C2-Pad1)">
+      <node ref="C2" pin="1"/>
+      <node ref="D6" pin="1"/>
+      <node ref="FL2" pin="1"/>
+      <node ref="Reg2" pin="4"/>
+      <node ref="Reg2" pin="6"/>
+    </net>
+    <net code="38" name="Net-(C7-Pad1)">
+      <node ref="Reg1" pin="3"/>
+      <node ref="R6" pin="1"/>
+      <node ref="R5" pin="1"/>
+      <node ref="C7" pin="1"/>
+    </net>
+    <net code="39" name="Net-(C5-Pad1)">
+      <node ref="Reg1" pin="1"/>
+      <node ref="C5" pin="1"/>
+      <node ref="FL1" pin="4"/>
+    </net>
+    <net code="40" name="Net-(D3-Pad2)">
+      <node ref="RV3" pin="2"/>
+      <node ref="Q1" pin="3"/>
+      <node ref="D3" pin="2"/>
+      <node ref="J16" pin="1"/>
+      <node ref="R9" pin="3"/>
+    </net>
+    <net code="41" name="Net-(C16-Pad2)">
+      <node ref="RV2" pin="1"/>
+      <node ref="OA1" pin="1"/>
+      <node ref="C16" pin="2"/>
+      <node ref="J2" pin="1"/>
+    </net>
+    <net code="42" name="Net-(C8-Pad1)">
+      <node ref="R1" pin="1"/>
+      <node ref="Reg2" pin="3"/>
+      <node ref="C8" pin="1"/>
+      <node ref="R7" pin="1"/>
+    </net>
+    <net code="43" name="Net-(C6-Pad2)">
+      <node ref="FL2" pin="2"/>
+      <node ref="C6" pin="2"/>
+      <node ref="D2" pin="2"/>
+    </net>
+    <net code="44" name="/10(**/SS)">
+      <node ref="P3" pin="8"/>
+    </net>
+    <net code="45" name="/A4(SDA)">
+      <node ref="P2" pin="5"/>
+    </net>
+    <net code="46" name="+3V3">
+      <node ref="P1" pin="4"/>
+    </net>
+    <net code="47" name="/12(MISO)">
+      <node ref="P3" pin="6"/>
+    </net>
+    <net code="48" name="/IOREF">
+      <node ref="P1" pin="2"/>
+    </net>
+    <net code="49" name="/6(**)">
+      <node ref="P4" pin="2"/>
+    </net>
+    <net code="50" name="/5(**)">
+      <node ref="P4" pin="3"/>
+    </net>
+    <net code="51" name="/2">
+      <node ref="P4" pin="6"/>
+    </net>
+    <net code="52" name="/1(Tx)">
+      <node ref="P4" pin="7"/>
+    </net>
+    <net code="53" name="/0(Rx)">
+      <node ref="P4" pin="8"/>
+    </net>
+    <net code="54" name="/A5(SCL*)">
+      <node ref="P3" pin="1"/>
+    </net>
+    <net code="55" name="/A4(SDA*)">
+      <node ref="P3" pin="2"/>
+    </net>
+    <net code="56" name="/AREF">
+      <node ref="P3" pin="3"/>
+    </net>
+    <net code="57" name="10V">
+      <node ref="OA1" pin="6"/>
+      <node ref="C14" pin="2"/>
+      <node ref="Reg4" pin="5"/>
+    </net>
+    <net code="58" name="Net-(C1-Pad1)">
+      <node ref="D5" pin="1"/>
+      <node ref="C1" pin="1"/>
+      <node ref="Reg1" pin="6"/>
+      <node ref="Reg1" pin="4"/>
+      <node ref="FL1" pin="1"/>
+    </net>
+    <net code="59" name="Net-(P1-Pad1)">
+      <node ref="P1" pin="1"/>
+    </net>
+    <net code="60" name="/Reset">
+      <node ref="P1" pin="3"/>
+    </net>
+    <net code="61" name="/A0">
+      <node ref="TH1" pin="1"/>
+      <node ref="RN1" pin="1"/>
+      <node ref="P2" pin="1"/>
+    </net>
+    <net code="62" name="/A1">
+      <node ref="TH2" pin="1"/>
+      <node ref="P2" pin="2"/>
+      <node ref="RN1" pin="2"/>
+    </net>
+    <net code="63" name="/A2">
+      <node ref="P2" pin="3"/>
+      <node ref="RN1" pin="3"/>
+      <node ref="TH3" pin="1"/>
+    </net>
+    <net code="64" name="Net-(OA1-Pad3)">
+      <node ref="OA1" pin="3"/>
+      <node ref="RV1" pin="2"/>
+    </net>
+    <net code="65" name="Net-(OA1-Pad5)">
+      <node ref="OA1" pin="5"/>
+    </net>
+    <net code="66" name="Net-(C28-Pad1)">
+      <node ref="Reg4" pin="4"/>
+      <node ref="C28" pin="1"/>
+    </net>
+    <net code="67" name="Net-(Reg3-Pad4)">
+      <node ref="Reg3" pin="4"/>
+    </net>
+    <net code="68" name="Net-(D7-Pad2)">
+      <node ref="D7" pin="2"/>
+      <node ref="L3" pin="2"/>
+    </net>
+    <net code="69" name="Net-(D10-Pad1)">
+      <node ref="D10" pin="1"/>
+      <node ref="L4" pin="2"/>
+    </net>
+    <net code="70" name="Net-(RV3-Pad3)">
+      <node ref="RV3" pin="3"/>
+    </net>
+    <net code="71" name="Net-(RV2-Pad3)">
+      <node ref="RV2" pin="3"/>
+    </net>
+    <net code="72" name="Net-(D4-Pad2)">
+      <node ref="D4" pin="2"/>
+      <node ref="J9" pin="1"/>
+    </net>
+    <net code="73" name="Vin">
+      <node ref="J10" pin="1"/>
+      <node ref="C19" pin="1"/>
+      <node ref="C21" pin="1"/>
+      <node ref="D4" pin="1"/>
+      <node ref="C22" pin="1"/>
+      <node ref="C17" pin="1"/>
+      <node ref="L1" pin="2"/>
+      <node ref="J12" pin="1"/>
+      <node ref="J15" pin="1"/>
+      <node ref="J14" pin="1"/>
+      <node ref="R2" pin="2"/>
+      <node ref="L2" pin="2"/>
+      <node ref="C20" pin="2"/>
+      <node ref="C18" pin="1"/>
+    </net>
+    <net code="74" name="/-5V-SMPS">
+      <node ref="D7" pin="1"/>
+      <node ref="C10" pin="2"/>
+      <node ref="R7" pin="2"/>
+      <node ref="C8" pin="2"/>
+      <node ref="FL2" pin="3"/>
+    </net>
+    <net code="75" name="/12V-SMPS">
+      <node ref="C7" pin="2"/>
+      <node ref="D10" pin="2"/>
+      <node ref="D1" pin="1"/>
+      <node ref="C11" pin="2"/>
+      <node ref="R5" pin="2"/>
+      <node ref="C9" pin="2"/>
+    </net>
+  </nets>
+</export>

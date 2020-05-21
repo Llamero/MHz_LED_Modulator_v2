@@ -1,0 +1,50 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP ADP7182AUJZ-Fixed
+D -28 V, -200 mA, Low Noise, Linear Regulator, TSOT-23-5
+K linear regulator ldo adjustable negative
+F http://www.analog.com/media/en/technical-documentation/data-sheets/ADP7182.pdf
+$ENDCMP
+#
+$CMP Coupled_Inductor
+D EMI 2-inductor-filter
+K EMI filter
+F http://www.murata.com/~/media/webrenewal/support/library/catalog/products/emc/emifil/c30e.ashx?la=en-gb
+$ENDCMP
+#
+$CMP FSA3157P6X
+D Single SPDT Low-Voltage Analog Switch or 2:1 Multiplexer/De-Multiplexer Bus Switch, 10Ohm Ron, SC-70-6
+K CMOS Analog Switch
+F https://www.fairchildsemi.com/datasheets/NC/NC7SB3157.pdf
+$ENDCMP
+#
+$CMP R-current
+D Resistor
+K r res resistor
+$ENDCMP
+#
+$CMP TS5A3159ADCKR
+D Single SPDT Analog Switch, 1.65-V to 5.5-V Single-Supply Operation, 1Ohm Ron, SC-70-6
+K Analog Switch
+F http://www.ti.com/lit/ds/symlink/ts5a3159a.pdf
+$ENDCMP
+#
+$CMP TS5A3159DCK
+D Single SPDT Analog Switch, 1.65-V to 5.5-V Single-Supply Operation, 1Ohm Ron, SC-70-6
+K Analog Switch SPDT
+F http://www.ti.com/lit/ds/symlink/ts5a3159.pdf
+$ENDCMP
+#
+$CMP TS5A3160DCK
+D Single SPDT Analog Switch, 1.65-V to 5.5-V Single-Supply Operation, 1Ohm Ron, SC-70-6
+K Analog Switch
+F http://www.ti.com/lit/ds/symlink/ts5a3160.pdf
+$ENDCMP
+#
+$CMP TS5A3357DCUR
+D Single SPDT Low-Voltage Analog Switch or 2:1 Multiplexer/De-Multiplexer Bus Switch, 10Ohm Ron, SC-70-6
+K CMOS Analog Switch
+F https://www.fairchildsemi.com/datasheets/NC/NC7SB3157.pdf
+$ENDCMP
+#
+#End Doc Library

@@ -49,14 +49,14 @@ uint16_t ATHRESHOLD = 500; //Threshold for analog trigger
 boolean DELAYORDER = 0; //Order of delays before trigger (0 = LED starts off, 1 = LED starts on);
 boolean DELAYUNITS = 0; //us or ms delay - confocal sync will always use us - us is also capped at 16383 (0 = us; 1 = ms)
 uint8_t FANMINTEMP = 173; //LED temp at which the PWM fan runs at minimum speed, - default to room temp (25oC = 173 on 8-bit ADC)
-uint8_t FANMAXTEMP = WARNTEMP[0]; //LED temp above which the PWM fan runs at maximum speed, - default to warn temp  
+uint8_t FANMAXTEMP = WARNTEMP[2]; //LED temp above which the PWM fan runs at maximum speed, - default to warn temp  
 uint8_t TRIGGER = 1; //trigger (0=toggle, 1=analog, 2=digital - confocal uses separate digital to trigger syncing)
 uint8_t ANALOGSEL = 3; //(analog select (3 = diode, 4 = raw) 
 uint8_t FAULTLED = B00000100; //Alarm to alert to warning temperature (0=false, 4=true)
 uint8_t FAULTVOLUME = 127; //Volume of alarm to alert to fault temperature (0 = min, 127 = max);
 uint8_t STARTVOLUME = 10; //Volume of short tone upon initializing (0 = min, 127 = max);
 boolean PWMFAN = 0; //Digital I/O as PWM fan controller (0=N/A, 1=on)
-uint8_t FANPIN = 0; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
+uint8_t FANPIN = 00; //Which digital ouput to use to drive the fan (0=N/A, 32=I/O 1, 64=I/O 2)
 boolean SYNCTYPE = 1; //sync type (0=regular, 1=confocal sync (pipeline syncs through fast routines)
 boolean DTRIGGERPOL = 1; //digital trigger polarity (0 = Low, 1 = High)
 boolean ATRIGGERPOL = 0; //analog trigger polarity (0 = Falling, 1 = Rising)
